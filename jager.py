@@ -60,7 +60,7 @@ def extract_hashes(t):
 
 def extract_emails(t):
 
-    emails = re.findall("[a-z0-9\.]+@[a-z0-9\.]+\.[a-z]+", " ".join(t))
+    emails = re.findall("[A-Z0-9._%+-]+@[A-Z0-9.-]+\.(?:[A-Z]{2}|com|org|net|edu|gov|mil|biz|info|mobi|name|aero|asia|jobs|museum)", " ".join(t))
 
     print {"emails": emails}
 
