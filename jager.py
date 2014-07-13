@@ -58,6 +58,7 @@ re_ssdeep = re.compile("\\b[0-9]+:[A-Za-z0-9+/]+:[A-Za-z0-9+/]+\\b", re.I)
 # File Types
 re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
 re_exe = '\W([\w-]+\.)(exe|dll)'
+re_web = '\W([\w-]+\.)(html|php)'
 re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
@@ -168,23 +169,26 @@ def extract_filenames(t):
 
     docs = list(set(["".join(doc) for doc in re.findall(re_doc, t)]))
     exes = list(set(["".join(item) for item in re.findall(re_exe, t)]))
+    webs = list(set(["".join(item) for item in re.findall(re_web, t)]))
     zips = list(set(["".join(item) for item in re.findall(re_zip, t)]))
     imgs = list(set(["".join(item) for item in re.findall(re_img, t)]))
     flashes = list(set(["".join(item) for item in re.findall(re_flash, t)]))
 
     docs.sort()
     exes.sort()
+    webs.sort()
     zips.sort()
     imgs.sort()
     flashes.sort()
 
     print " - %s Docs detected." % len(docs)
     print " - %s Executable files detected." % len(exes)
+    print " - %s Web files detected." % len(webs)
     print " - %s Zip files detected." % len(zips)
     print " - %s Image files detected." % len(imgs)
     print " - %s Flash files detected." % len(flashes)
 
-    return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes}
+    return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
 
 def collect_metadata():
     return []
