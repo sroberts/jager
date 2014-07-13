@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Starter_Script_With_Args.py
+jager.py
 
 Created by Scott Roberts.
 Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 from optparse import OptionParser
-from PyPDF2 import PdfFileReader
-import re
+import re, json, time, hashlib, os
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfpage import PDFPage
+from cStringIO import StringIO
 
 '''
 # Setup Logging
@@ -39,40 +43,142 @@ logger.error('error message')
 logger.critical('critical message')
 '''
 
-def extract_pdf_text(pdf_path = "/Users/sroberts/Desktop/fireeye-operation-saffron-rose.pdf"):
-    """Just some testing to get started"""
+# Indicators
+re_ipv4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I)
+re_domain = re.compile("[\w\-\.\_]+\.(am|au|az|br|biz|ca|cn|co|com|de|es|fr|hk|id|in|info|ir|it|jp|kz|me|mx|net|pl|org|ru|se|to|tr|tw|ua|uk|us|uz)\\b", re.I | re.S | re.M)
+#"([A-Za-z0-9\.\-]+\.)?[A-Za-z0-9\.\-]+\.(com|net|biz|cat|aero|asia|coop|info|int|jobs|mobi|museum|name|org|post|pre|tel|travel|edu|gov|mil|br|cc|ca|uk|ch|cn|co|cx|it|de|fr|hk|jp|kr|nl|nr|ru|tk|ws|tw|to|uk|pl|sg){1,3}"
+# Hashes
+re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I)
+re_sha1 = re.compile("\\b[a-f0-9]{40}\\b", re.I)
+re_sha256 = re.compile("\\b[a-f0-9]{64}\\b", re.I)
+re_sha512 = re.compile("\\b[a-f0-9]{128}\\b", re.I)
+re_ssdeep = re.compile("\\b[0-9]+:[A-Za-z0-9+/]+:[A-Za-z0-9+/]+\\b", re.I)
 
-    pdf = PdfFileReader(open(pdf_path, "rb"))
+# File Types
+re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
+re_exe = '\W([\w-]+\.)(exe|dll)'
+re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
+re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
+re_flash = '\W([\w-]+\.)(flv|swf)'
 
-    print pdf.getDocumentInfo()
+def pdf_text_extractor(path):
+    '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
 
-    pdf_text = [page.extractText().lower() for page in pdf.pages]
+    print "- Extracting: PDF Text"
 
-    return pdf_text
+    rsrcmgr = PDFResourceManager()
+    retstr = StringIO()
+    codec = 'utf-8'
+    laparams = LAParams()
+    device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+    fp = file(path, 'rb')
+    interpreter = PDFPageInterpreter(rsrcmgr, device)
+    password = ""
+    maxpages = 0
+    caching = True
+    pagenos=set()
+    for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password,caching=caching, check_extractable=True):
+        interpreter.process_page(page)
+    fp.close()
+    device.close()
+    str = retstr.getvalue()
+    retstr.close()
+    return str
+
+    print doc.info
+
+def file_metadata(path):
+    print "- Extracting: Source File Metadata"
+
+    hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
+    filesize = os.path.getsize(path)
+    filename = path.split('/')[-1]
+
+    return {"sha1": hash_sha1, "fileize": filesize, "filename": filename}
 
 def extract_hashes(t):
-    unified_text = " ".join(t)
+    print "- Extracting: Hashes"
 
-    md5s = re.findall("[a-f0-9]{32}", unified_text)
-    sha1s = re.findall("[a-f0-9]{40}", unified_text)
+    md5s = list(set(re.findall(re_md5, t)))
+    sha1s = list(set(re.findall(re_sha1, t)))
+    sha256s = list(set(re.findall(re_sha256, t)))
+    sha512s = list(set(re.findall(re_sha512, t)))
+    ssdeeps = list(set(re.findall(re_ssdeep, t)))
 
-    return {"md5s": md5s, "sha1s": sha1s}
+    print " - %s MD5s detected." % len(md5s)
+    print " - %s SHA1s detected." % len(sha1s)
+    print " - %s SHA256s detected." % len(sha256s)
+    print " - %s SHA512s detected." % len(sha512s)
+    print " - %s ssdeeps detected." % len(ssdeeps)
+
+    return {"md5s": md5s, "sha1s": sha1s, "sha256": sha256s, "sha512": sha512s, "ssdeep": ssdeeps}
 
 def extract_emails(t):
+    print "- Extracting: Email Addresses"
 
-    emails = re.findall("[A-Z0-9._%+-]+@[A-Z0-9.-]+\.(?:[A-Z]{2}|com|org|net|edu|gov|mil|biz|info|mobi|name|aero|asia|jobs|museum)", " ".join(t))
+    emails = list(set(re.findall(re_email, t)))
+    emails.sort()
 
-    print {"emails": emails}
+    print " - %d email addresses detected." % (len(emails))
 
-# def foo():
-#     return "foo function called"
-#
-# def bar():
-#     return "bar function called"
+    return emails
+
+def extract_ips(t):
+    print "- Extracting: IPv4 Addresses"
+
+    ips = re.findall(re_ipv4, t)
+    ips = list(set(ips))
+    ips.sort()
+
+    print " - %d IPv4 addresses detected." % len(ips)
+
+    return {"ipv4addresses": ips, "ipv6addresses": []}
+
+def extract_domains(t):
+    print "- Extracting: Domains"
+
+    domains = re.findall(re_domain, t)
+
+    domains_list = list(set(["".join(item) for item in domains]))
+    domains_list = [item.lower() for item in domains_list]
+    domains_list.sort()
+
+    print " - %d domains detected." % len(domains)
+
+    return domains_list
+
+def extract_urls(t):
+    #print "- Extracting: URLS"
+    #print " - %d IPv4 addresses detected." % len(ips)
+    return []
+
+def extract_filenames(t):
+    print "- Extracting: File Names"
+
+    docs = list(set(["".join(doc) for doc in re.findall(re_doc, t)]))
+    exes = list(set(["".join(item) for item in re.findall(re_exe, t)]))
+    zips = list(set(["".join(item) for item in re.findall(re_zip, t)]))
+    imgs = list(set(["".join(item) for item in re.findall(re_img, t)]))
+    flashes = list(set(["".join(item) for item in re.findall(re_flash, t)]))
+
+    docs.sort()
+    exes.sort()
+    zips.sort()
+    imgs.sort()
+    flashes.sort()
+
+    print " - %s Docs detected." % len(docs)
+    print " - %s Executable files detected." % len(exes)
+    print " - %s Zip files detected." % len(zips)
+    print " - %s Image files detected." % len(imgs)
+    print " - %s Flash files detected." % len(flashes)
+
+    return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes}
 
 def main():
 
-    pdf_path = "/Users/sroberts/Desktop/fireeye-operation-saffron-rose.pdf"
+    target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
 
     # parser = OptionParser(usage="usage: %prog [options] filepath")
     # parser.add_option("-f", "--foo",
@@ -105,11 +211,38 @@ def main():
     # else:
     #   print "Bar Dest: Blank"
 
-    pdf_text = extract_pdf_text(pdf_path)
+    text = pdf_text_extractor(target)
 
+    output = {
+        "group_name": [
+            "?"
+        ],
+        "attribution": [
+            "?"
+        ],
+        "indicators": {
+            "ips": extract_ips(text),
+            "urls": extract_urls(text),
+            "domains": extract_domains(text),
+            "emails": extract_emails(text)
+        },
+        "malware": {
+            "filenames": extract_filenames(text),
+            "hashes": extract_hashes(text)
+        },
+        "metadata": {
+            "report_name": "??",
+            "date_analyzed": time.strftime("%Y-%m-%d %H:%M"),
+            "source": "??",
+            "release_date": "??",
+            "authors": [
+                "??"
+            ],
+            "pdf": file_metadata(target)
+        }
+    }
 
-    print extract_hashes(pdf_text)
-    print extract_emails(pdf_text)
+    #print json.dumps(output, indent=4)
 
     return True
 
