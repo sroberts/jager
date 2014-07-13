@@ -241,85 +241,57 @@ def main():
     title()
     target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
 
-    # parser = OptionParser(usage="usage: %prog [options] filepath")
-    # parser.add_option("-f", "--foo",
-    #                   action="store",
-    #                   type="string",
-    #                   dest="foo_dest",
-    #                   default=None,
-    #                   help="You picked option foo!")
-    # parser.add_option("-b", "--bar",
-    #                   action="store",
-    #                   type="string",
-    #                   dest="bar_dest",
-    #                   default=None,
-    #                   help="You picked option bar!")
-    #
-    # (options, args) = parser.parse_args()
+    parser = OptionParser(usage="usage: %prog [options] input (-i, -d, -u, -t) arguement -o/--out filename")
+    parser.add_option("-p", "--pdf",
+                      action="store",
+                      type="string",
+                      dest="in_path",
+                      default=None,
+                      help="Specify an input.")
+    parser.add_option("-o", "--out",
+                      action="store",
+                      type="string",
+                      dest="out_path",
+                      default=None,
+                      help="Specify an output.")
+    parser.add_option("-d", "--directory",
+                      action="store",
+                      type="string",
+                      dest="in_directory",
+                      default=None,
+                      help="NOT IMPLIMENTED: Specify a directory to analyze.")
+    parser.add_option("-u", "--url",
+                      action="store",
+                      type="string",
+                      dest="in_url",
+                      default=None,
+                      help="NOT IMPLIMENTED: Analyze webpage.")
+    parser.add_option("-t", "--text",
+                      action="store",
+                      type="string",
+                      dest="out_path",
+                      default=None,
+                      help="NOT IMPLIMENTED: Analyze textfile.")
 
-    #Uncomment to enforce at least one final argument
-    #if len(args) != 1:
-        #parser.error("You didn't specify a target path.")
-        #return False
+    (options, args) = parser.parse_args()
 
-    # if options.foo_dest:
-    #   print foo()
-    # else:
-    #   print "Foo Dest: Blank"
+    if options.in_path and options.out_path:
+        print "IN (%s) & OUT (%s) Specified" % (options.in_path, options.out_path)
+    else:
+      print "DIDNT WORK!!"
     #
     # if options.bar_dest:
     #   print bar()
     # else:
     #   print "Bar Dest: Blank"
+    #
+    # print "\n\n" + "="*20 + "\n\n"
+    # target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
+    # out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0].lower())
+    # out_file = open(out_target, 'w')
+    # out_file.write(json.dumps(generate_json(target), indent=4))
+    # out_file.close()
 
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0].lower())
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
-
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/GData_Uroburos_RedPaper_EN_v1.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
-
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/Reuters_Turla.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
-
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/deep-panda-webshells.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
-
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/putter-panda.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
-
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/snake_whitepaper.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
-
-    print "\n\n" + "="*20 + "\n\n"
-    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/unveilingthemask_v1.0.pdf"
-    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
-    out_file = open(out_target, 'w')
-    out_file.write(json.dumps(generate_json(target), indent=4))
-    out_file.close()
 
     return True
 
