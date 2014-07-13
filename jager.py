@@ -57,8 +57,8 @@ re_ssdeep = re.compile("\\b[0-9]+:[A-Za-z0-9+/]+:[A-Za-z0-9+/]+\\b", re.I)
 
 # File Types
 re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
-re_exe = '\W([\w-]+\.)(exe|dll)'
 re_web = '\W([\w-]+\.)(html|php)'
+re_exe = '\W([\w-]+\.)(exe|dll|jar)'
 re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
