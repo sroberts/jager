@@ -4,7 +4,7 @@
     |    \__  \   / ___\_/ __ \_  __ \
 /\__|    |/ __ \_/ /_/  >  ___/|  | \/
 \________(____  /\___  / \___  >__|
-              \//_____/      \/        Hunting IOCs All Day Every Day
+               \//_____/      \/        Hunting IOCs All Day Every Day
 ```
 
 Jager is a tool for pulling useful IOCs (indicators of compromise) out of various input sources (PDFs for now, plane text really soon, webpages eventually) and putting them into an easy to manipulate JSON format. Who doesn't want that?!
