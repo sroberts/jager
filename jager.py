@@ -68,28 +68,30 @@ def pdf_text_extractor(path):
 
     print "- Extracting: PDF Text - %s" % (path.split("/")[-1])
 
-    rsrcmgr = PDFResourceManager()
-    retstr = StringIO()
-    codec = 'utf-8'
-    laparams = LAParams()
-    device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
-    fp = file(path, 'rb')
-    interpreter = PDFPageInterpreter(rsrcmgr, device)
-    password = ""
-    maxpages = 0
-    caching = True
-    pagenos=set()
-    for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password,caching=caching, check_extractable=True):
-        interpreter.process_page(page)
-    fp.close()
-    device.close()
-    str = retstr.getvalue()
-    retstr.close()
-    return str
+    try:
+        rsrcmgr = PDFResourceManager()
+        retstr = StringIO()
+        codec = 'utf-8'
+        laparams = LAParams()
+        device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+        fp = file(path, 'rb')
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        password = ""
+        maxpages = 0
+        caching = True
+        pagenos=set()
+        for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password,caching=caching, check_extractable=True):
+            interpreter.process_page(page)
+        fp.close()
+        device.close()
+        str = retstr.getvalue()
+        retstr.close()
+        return str
 
-    # CATCH Text Extraction Failure
-    # pdfminer.pdfdocument.PDFTextExtractionNotAllowed: Text extraction is not allowed: <open file '/Users/scottjroberts/Documents/src/APTnotes/2014/h12756-wp-shell-crew.pdf', mode 'rb' at 0x10bc01e40>
-
+    except:
+        # CATCH Text Extraction Failure
+        # pdfminer.pdfdocument.PDFTextExtractionNotAllowed: Text extraction is not allowed: <open file '/Users/scottjroberts/Documents/src/APTnotes/2014/h12756-wp-shell-crew.pdf', mode 'rb' at 0x10bc01e40>
+        raise
 
     print doc.info
 
@@ -263,7 +265,7 @@ def main():
                       type="string",
                       dest="in_directory",
                       default=None,
-                      help="NOT IMPLIMENTED: Specify a directory to analyze.")
+                      help="WIP: Specify a directory to analyze.")
     parser.add_option("-u", "--url",
                       action="store",
                       type="string",
@@ -273,17 +275,39 @@ def main():
     parser.add_option("-t", "--text",
                       action="store",
                       type="string",
-                      dest="out_path",
+                      dest="in_text",
                       default=None,
                       help="NOT IMPLIMENTED: Analyze textfile.")
 
     (options, args) = parser.parse_args()
 
     if options.in_pdf and options.out_path:
-        # Input of a PDF
+        # Input of a PDF out to JSON
         out_file = open(os.path.abspath(options.out_path), 'w')
         out_file.write(json.dumps(generate_json(os.path.abspath(options.in_pdf)), indent=4))
         out_file.close()
+
+    elif options.in_url and options.out_path:
+        # Input of a website out to JSON
+        print "NOT IMPLIMENTED: You're trying to analyze: %s and output to %s" % (options.in_url, optoins.out_path)
+
+    elif options.in_directory and options.out_path:
+        # Input of a directory, expand directory, and output to json
+        print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (options.in_directory, options.out_path)
+
+        for root, dirs, files in os.walk(os.path.abspath(options.in_directory)):
+            for file in files:
+                if file.endswith(".pdf"):
+                    print "- Analyzing File: %s" % (file)
+                    out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
+                    out_file = open(out_filename, 'w')
+                    out_file.write(json.dumps(generate_json(os.path.join(root, file)), indent=4))
+                    out_file.close()
+
+    elif option.in_text and options.out_path:
+        # Input of a textfile and output to json
+        print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+
     else:
       print "DIDNT WORK!! LOL!"
 
