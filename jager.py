@@ -100,7 +100,7 @@ def file_metadata(path):
     filesize = os.path.getsize(path)
     filename = path.split('/')[-1]
 
-    return {"sha1": hash_sha1, "fileize": filesize, "filename": filename}
+    return {"sha1": hash_sha1, "filesize": filesize, "filename": filename}
 
 def extract_hashes(t):
     print "- Extracting: Hashes"
@@ -245,11 +245,11 @@ def main():
     title()
     target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
 
-    parser = OptionParser(usage="usage: %prog [options] input (-i, -d, -u, -t) arguement -o/--out filename")
+    parser = OptionParser(usage="usage: %prog [options] input (-p, -d, -u, -t) arguement -o/--out filename")
     parser.add_option("-p", "--pdf",
                       action="store",
                       type="string",
-                      dest="in_path",
+                      dest="in_pdf",
                       default=None,
                       help="Specify an input.")
     parser.add_option("-o", "--out",
@@ -279,23 +279,13 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    if options.in_path and options.out_path:
-        print "IN (%s) & OUT (%s) Specified" % (options.in_path, options.out_path)
+    if options.in_pdf and options.out_path:
+        # Input of a PDF
+        out_file = open(os.path.abspath(options.out_path), 'w')
+        out_file.write(json.dumps(generate_json(os.path.abspath(options.in_pdf)), indent=4))
+        out_file.close()
     else:
-      print "DIDNT WORK!!"
-    #
-    # if options.bar_dest:
-    #   print bar()
-    # else:
-    #   print "Bar Dest: Blank"
-    #
-    # print "\n\n" + "="*20 + "\n\n"
-    # target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
-    # out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0].lower())
-    # out_file = open(out_target, 'w')
-    # out_file.write(json.dumps(generate_json(target), indent=4))
-    # out_file.close()
-
+      print "DIDNT WORK!! LOL!"
 
     return True
 
