@@ -46,8 +46,8 @@ logger.critical('critical message')
 # Indicators
 re_ipv4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
 re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I)
-re_domain = re.compile("[\w\-\.\_]+\.(am|au|az|br|biz|ca|cn|co|com|de|es|fr|hk|id|in|info|ir|it|jp|kz|me|mx|net|pl|org|ru|se|to|tr|tw|ua|uk|us|uz)\\b", re.I | re.S | re.M)
-#"([A-Za-z0-9\.\-]+\.)?[A-Za-z0-9\.\-]+\.(com|net|biz|cat|aero|asia|coop|info|int|jobs|mobi|museum|name|org|post|pre|tel|travel|edu|gov|mil|br|cc|ca|uk|ch|cn|co|cx|it|de|fr|hk|jp|kr|nl|nr|ru|tk|ws|tw|to|uk|pl|sg){1,3}"
+re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
+
 # Hashes
 re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I)
 re_sha1 = re.compile("\\b[a-f0-9]{40}\\b", re.I)
@@ -65,7 +65,7 @@ re_flash = '\W([\w-]+\.)(flv|swf)'
 def pdf_text_extractor(path):
     '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
 
-    print "- Extracting: PDF Text"
+    print "- Extracting: PDF Text - %s" % (path.split("/")[-1])
 
     rsrcmgr = PDFResourceManager()
     retstr = StringIO()
@@ -85,6 +85,10 @@ def pdf_text_extractor(path):
     str = retstr.getvalue()
     retstr.close()
     return str
+
+    # CATCH Text Extraction Failure
+    # pdfminer.pdfdocument.PDFTextExtractionNotAllowed: Text extraction is not allowed: <open file '/Users/scottjroberts/Documents/src/APTnotes/2014/h12756-wp-shell-crew.pdf', mode 'rb' at 0x10bc01e40>
+
 
     print doc.info
 
@@ -138,15 +142,21 @@ def extract_ips(t):
 def extract_domains(t):
     print "- Extracting: Domains"
 
-    domains = re.findall(re_domain, t)
+    domains = []
 
-    domains_list = list(set(["".join(item) for item in domains]))
-    domains_list = [item.lower() for item in domains_list]
-    domains_list.sort()
+    t = t.split("\n")
+
+    for line in t:
+        hit = re.search(re_domain, line)
+        if re.search(re_domain, line):
+            domains.append(hit.group().lower())
+
+    domains = list(set(domains))
+    domains.sort()
 
     print " - %d domains detected." % len(domains)
 
-    return domains_list
+    return domains
 
 def extract_urls(t):
     #print "- Extracting: URLS"
@@ -176,8 +186,59 @@ def extract_filenames(t):
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes}
 
+def collect_metadata():
+    return []
+
+def generate_json(target):
+
+    text = pdf_text_extractor(target)
+
+    group_json = {
+        "group_name": [
+            "?"
+        ],
+        "attribution": [
+            "?"
+        ],
+        "indicators": {
+            "ips": extract_ips(text),
+            "urls": extract_urls(text),
+            "domains": extract_domains(text),
+            "emails": extract_emails(text)
+        },
+        "malware": {
+            "filenames": extract_filenames(text),
+            "hashes": extract_hashes(text)
+        },
+        "metadata": {
+            "report_name": "??",
+            "date_analyzed": time.strftime("%Y-%m-%d %H:%M"),
+            "source": "??",
+            "release_date": "??",
+            "authors": [
+                "??"
+            ],
+            "pdf": file_metadata(target)
+        }
+    }
+
+    return group_json
+
+def title():
+    ascii_art = """
+   __
+   \ \  __ _  __ _  ___ _ __
+    \ \/ _` |/ _` |/ _ \ '__|
+ /\_/ / (_| | (_| |  __/ |
+ \___/ \__,_|\__, |\___|_|    IOC Extractor
+             |___/
+
+"""
+    print ascii_art
+
 def main():
 
+    title()
     target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
 
     # parser = OptionParser(usage="usage: %prog [options] filepath")
@@ -211,38 +272,54 @@ def main():
     # else:
     #   print "Bar Dest: Blank"
 
-    text = pdf_text_extractor(target)
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0].lower())
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
 
-    output = {
-        "group_name": [
-            "?"
-        ],
-        "attribution": [
-            "?"
-        ],
-        "indicators": {
-            "ips": extract_ips(text),
-            "urls": extract_urls(text),
-            "domains": extract_domains(text),
-            "emails": extract_emails(text)
-        },
-        "malware": {
-            "filenames": extract_filenames(text),
-            "hashes": extract_hashes(text)
-        },
-        "metadata": {
-            "report_name": "??",
-            "date_analyzed": time.strftime("%Y-%m-%d %H:%M"),
-            "source": "??",
-            "release_date": "??",
-            "authors": [
-                "??"
-            ],
-            "pdf": file_metadata(target)
-        }
-    }
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/GData_Uroburos_RedPaper_EN_v1.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
 
-    #print json.dumps(output, indent=4)
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/Reuters_Turla.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
+
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/deep-panda-webshells.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
+
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/putter-panda.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
+
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/snake_whitepaper.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
+
+    print "\n\n" + "="*20 + "\n\n"
+    target = "/Users/scottjroberts/Documents/src/APTnotes/2014/unveilingthemask_v1.0.pdf"
+    out_target = "/Users/scottjroberts/Documents/src/jager-db/%s.json" % (target.split("/")[-1].split(".")[0])
+    out_file = open(out_target, 'w')
+    out_file.write(json.dumps(generate_json(target), indent=4))
+    out_file.close()
 
     return True
 
