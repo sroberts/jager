@@ -55,6 +55,7 @@ re_sha1 = re.compile("\\b[a-f0-9]{40}\\b", re.I)
 re_sha256 = re.compile("\\b[a-f0-9]{64}\\b", re.I)
 re_sha512 = re.compile("\\b[a-f0-9]{128}\\b", re.I)
 re_ssdeep = re.compile("\\b[0-9]+:[A-Za-z0-9+/]+:[A-Za-z0-9+/]+\\b", re.I)
+re_ssdeep = re.compile("\\b\\d{2}:[A-Za-z0-9/+]{3,}:[A-Za-z0-9/+]{3,}\\b", re.I | re.S | re.M)
 
 # File Types
 re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
