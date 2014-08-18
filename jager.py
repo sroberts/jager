@@ -64,6 +64,7 @@ re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
 
+# Text Extractors:
 def pdf_text_extractor(path):
     '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
 
@@ -96,6 +97,7 @@ def pdf_text_extractor(path):
 
     print doc.info
 
+# Meta Data
 def file_metadata(path, type):
     print "- Extracting: Source File Metadata"
 
@@ -106,6 +108,7 @@ def file_metadata(path, type):
 
     return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
 
+# Data Extractors
 def extract_hashes(t):
     print "- Extracting: Hashes"
 
@@ -209,6 +212,7 @@ def extract_filenames(t):
 def collect_metadata():
     return []
 
+# Output Generators
 def generate_json(text, metadata):
 
     group_json = {
@@ -255,6 +259,7 @@ def title():
 """
     print ascii_art
 
+# Interface
 def main():
 
     title()
