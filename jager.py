@@ -8,7 +8,7 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 from optparse import OptionParser
-import re, json, time, hashlib, os
+import re, json, time, hashlib, os, requests, magic
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -96,14 +96,15 @@ def pdf_text_extractor(path):
 
     print doc.info
 
-def file_metadata(path):
+def file_metadata(path, type):
     print "- Extracting: Source File Metadata"
 
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
     filesize = os.path.getsize(path)
     filename = path.split('/')[-1]
+    filetype = magic.from_file(path)
 
-    return {"sha1": hash_sha1, "filesize": filesize, "filename": filename}
+    return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
 
 def extract_hashes(t):
     print "- Extracting: Hashes"
@@ -208,9 +209,7 @@ def extract_filenames(t):
 def collect_metadata():
     return []
 
-def generate_json(target):
-
-    text = pdf_text_extractor(target)
+def generate_json(text, metadata):
 
     group_json = {
         "group_name": [
@@ -238,7 +237,7 @@ def generate_json(target):
             "authors": [
                 "??"
             ],
-            "pdf": file_metadata(target)
+            "file_metadata": metadata
         }
     }
 
@@ -285,7 +284,7 @@ def main():
                       type="string",
                       dest="in_url",
                       default=None,
-                      help="NOT IMPLIMENTED: Analyze webpage.")
+                      help="WIP: Analyze webpage.")
     parser.add_option("-t", "--text",
                       action="store",
                       type="string",
@@ -298,12 +297,20 @@ def main():
     if options.in_pdf and options.out_path:
         # Input of a PDF out to JSON
         out_file = open(os.path.abspath(options.out_path), 'w')
-        out_file.write(json.dumps(generate_json(os.path.abspath(options.in_pdf)), indent=4))
+        in_file = os.path.abspath(options.in_pdf)
+        metadata = file_metadata(in_file, "PDF")
+
+        pdftext = pdf_text_extractor(in_file)
+        outjson = json.dumps(generate_json(pdftext, metadata), indent=4)
+
+        out_file.write(outjson)
         out_file.close()
 
     elif options.in_url and options.out_path:
         # Input of a website out to JSON
-        print "NOT IMPLIMENTED: You're trying to analyze: %s and output to %s" % (options.in_url, optoins.out_path)
+        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, optoins.out_path)
+
+        r = requests.get(options.in_url)
 
     elif options.in_directory and options.out_path:
         # Input of a directory, expand directory, and output to json
