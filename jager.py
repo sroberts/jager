@@ -209,9 +209,6 @@ def extract_filenames(t):
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
 
-def collect_metadata():
-    return []
-
 # Output Generators
 def generate_json(text, metadata):
 
@@ -261,9 +258,8 @@ def title():
 
 # Interface
 def main():
-
+    '''Where the initial work happens...'''
     title()
-    target = "/Users/scottjroberts/Desktop/PDFs/Pitty Tiger Final Report.pdf"
 
     parser = OptionParser(usage="usage: %prog [options] input (-p, -d, -u, -t) arguement -o/--out filename")
     parser.add_option("-p", "--pdf",
@@ -276,7 +272,7 @@ def main():
                       action="store",
                       type="string",
                       dest="out_path",
-                      default=None,
+                      default="output.json",
                       help="Specify an output.")
     parser.add_option("-d", "--directory",
                       action="store",
@@ -330,12 +326,13 @@ def main():
                     out_file.write(json.dumps(generate_json(os.path.join(root, file)), indent=4))
                     out_file.close()
 
-    elif option.in_text and options.out_path:
+    #elif option.in_text and options.out_path:
         # Input of a textfile and output to json
-        print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+        #print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
 
     else:
-      print "DIDNT WORK!! LOL!"
+      print "That set of options won't get you what you need.\n"
+      parser.print_help()
 
     return True
 
