@@ -325,7 +325,7 @@ def main():
                     out_file.write(json.dumps(generate_json(os.path.join(root, file)), indent=4))
                     out_file.close()
 
-    elif option.in_text and options.out_path:
+    elif options.in_text and options.out_path:
         # Input of a textfile and output to json
         print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
 
