@@ -309,7 +309,7 @@ def main():
 
     elif options.in_url and options.out_path:
         # Input of a website out to JSON
-        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, optoins.out_path)
+        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, options.out_path)
 
         r = requests.get(options.in_url)
 
