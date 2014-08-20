@@ -8,7 +8,14 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 from optparse import OptionParser
-import re, json, time, hashlib, os, requests, magic
+import re
+import json
+import time
+import hashlib
+import os
+import requests
+import magic
+
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -64,6 +71,7 @@ re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
 
+
 # Text Extractors:
 def pdf_text_extractor(path):
     '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
@@ -97,6 +105,7 @@ def pdf_text_extractor(path):
 
     print doc.info
 
+
 # Meta Data
 def file_metadata(path, type):
     print "- Extracting: Source File Metadata"
@@ -107,6 +116,7 @@ def file_metadata(path, type):
     filetype = magic.from_file(path)
 
     return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
+
 
 # Data Extractors
 def extract_hashes(t):
@@ -126,6 +136,7 @@ def extract_hashes(t):
 
     return {"md5s": md5s, "sha1s": sha1s, "sha256": sha256s, "sha512": sha512s, "ssdeep": ssdeeps}
 
+
 def extract_emails(t):
     print "- Extracting: Email Addresses"
 
@@ -135,6 +146,7 @@ def extract_emails(t):
     print " - %d email addresses detected." % (len(emails))
 
     return emails
+
 
 def extract_ips(t):
     print "- Extracting: IPv4 Addresses"
@@ -147,6 +159,7 @@ def extract_ips(t):
 
     return {"ipv4addresses": ips, "ipv6addresses": []}
 
+
 def extract_cves(t):
     print "- Extracting: CVE Identifiers"
 
@@ -158,6 +171,7 @@ def extract_cves(t):
     print " - %d CVE identifiers detected." % len(cves)
 
     return cves
+
 
 def extract_domains(t):
     print "- Extracting: Domains"
@@ -178,10 +192,12 @@ def extract_domains(t):
 
     return domains
 
+
 def extract_urls(t):
     #print "- Extracting: URLS"
     #print " - %d IPv4 addresses detected." % len(ips)
     return []
+
 
 def extract_filenames(t):
     print "- Extracting: File Names"
@@ -208,6 +224,7 @@ def extract_filenames(t):
     print " - %s Flash files detected." % len(flashes)
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
+
 
 # Output Generators
 def generate_json(text, metadata):
@@ -243,6 +260,7 @@ def generate_json(text, metadata):
     }
 
     return group_json
+
 
 def title():
     ascii_art = """
@@ -309,7 +327,7 @@ def main():
 
     elif options.in_url and options.out_path:
         # Input of a website out to JSON
-        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, optoins.out_path)
+        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, options.out_path)
 
         r = requests.get(options.in_url)
 
@@ -328,13 +346,14 @@ def main():
                     
     elif options.in_text and options.out_path:
         # Input of a textfile and output to json
-        print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
 
     else:
-      print "That set of options won't get you what you need.\n"
-      parser.print_help()
+        print "That set of options won't get you what you need.\n"
+        parser.print_help()
 
     return True
+
 
 if __name__ == "__main__":
     try:
@@ -343,5 +362,3 @@ if __name__ == "__main__":
         print "User aborted."
     except SystemExit:
         pass
-    #except:
-        #crash()
