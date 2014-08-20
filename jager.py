@@ -8,7 +8,14 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 from optparse import OptionParser
-import re, json, time, hashlib, os, requests, magic
+import re
+import json
+import time
+import hashlib
+import os
+import requests
+import magic
+
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
