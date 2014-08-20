@@ -349,8 +349,8 @@ def main():
         print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
 
     else:
-      print "That set of options won't get you what you need.\n"
-      parser.print_help()
+        print "That set of options won't get you what you need.\n"
+        parser.print_help()
 
     return True
 
