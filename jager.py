@@ -346,7 +346,7 @@ def main():
                     
     elif options.in_text and options.out_path:
         # Input of a textfile and output to json
-        print "NOT IMPLIMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
 
     else:
         print "That set of options won't get you what you need.\n"
@@ -362,5 +362,3 @@ if __name__ == "__main__":
         print "User aborted."
     except SystemExit:
         pass
-    #except:
-        #crash()
