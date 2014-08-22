@@ -14,6 +14,7 @@ from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 from cStringIO import StringIO
+import bs4
 
 '''
 # Setup Logging
@@ -100,7 +101,8 @@ def pdf_text_extractor(path):
 def www_text_extractor(target):
 
     response = requests.get(target)
-    print response.text
+    soup = bs4.BeautifulSoup(response.text)
+    return soup.get_text()
 
 # Meta Data
 def file_metadata(path, type):
@@ -344,7 +346,7 @@ def main():
 def test_main():
     url = "http://contagiodump.blogspot.com/2014/07/cz-solution-ltd-signed-samples-of.html"
     print "Trying to Text Extract %s" % url
-    www_text_extractor(url)
+    print generate_json(www_text_extractor(url), {'source', url})
 
 if __name__ == "__main__":
     try:
