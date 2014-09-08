@@ -111,7 +111,8 @@ def www_text_extractor(target):
 
     response = requests.get(target)
     soup = bs4.BeautifulSoup(response.text)
-    return soup.get_text()
+    [s.extract() for s in soup('script')]
+    return soup.body.get_text()
 
 
 # Meta Data
