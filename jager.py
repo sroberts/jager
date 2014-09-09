@@ -372,7 +372,7 @@ def test_main():
 
 if __name__ == "__main__":
     try:
-        test_main()
+        main()
     except KeyboardInterrupt:
         print "User aborted."
     except SystemExit:
