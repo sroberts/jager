@@ -2,3 +2,4 @@ pdfminer==20140328
 python-magic==0.4.6
 requests==2.3.0
 wsgiref==0.1.2
+beautifulsoup4
