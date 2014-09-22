@@ -204,9 +204,19 @@ def extract_domains(t):
 
 
 def extract_urls(t):
-    #print "- Extracting: URLS"
-    #print " - %d IPv4 addresses detected." % len(ips)
-    return []
+    print "- Extracting: URLS"
+    urls = []
+    t = t.split("\n")
+
+    for line in t:
+        hit = re.search(re_url, line)
+        if re.search(re_url, line):
+            urls.append(hit.group().lower())
+
+    urls = list(set(urls))
+    urls.sort()
+    #print " - %d URLs detected." % len(urls)
+    return urls
 
 
 def extract_filenames(t):
