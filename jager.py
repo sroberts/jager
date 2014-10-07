@@ -204,18 +204,14 @@ def extract_domains(t):
 
 
 def extract_urls(t):
-    print "- Extracting: URLS"
-    urls = []
-    t = t.split("\n")
-
-    for line in t:
-        hit = re.search(re_url, line)
-        if re.search(re_url, line):
-            urls.append(hit.group().lower())
-
+    print "- Extracting: URLs"
+    urls = re.findall(re_url, t)
+    # eliminate repeats
     urls = list(set(urls))
     urls.sort()
-    #print " - %d URLs detected." % len(urls)
+
+    print " - %d URLs detected." % len(urls)
+
     return urls
 
 
