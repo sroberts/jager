@@ -91,8 +91,8 @@ def pdf_text_extractor(path):
         password = ""
         maxpages = 0
         caching = True
-        pagenos=set()
-        for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password,caching=caching, check_extractable=True):
+        pagenos = set()
+        for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password, caching=caching, check_extractable=True):
             interpreter.process_page(page)
         fp.close()
         device.close()
@@ -289,6 +289,7 @@ def title():
 
 """
     print ascii_art
+
 
 # Interface
 def main():
