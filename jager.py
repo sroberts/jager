@@ -352,12 +352,15 @@ def main():
         print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (options.in_directory, options.out_path)
 
         for root, dirs, files in os.walk(os.path.abspath(options.in_directory)):
-            for file in files:
-                if file.endswith(".pdf"):
-                    print "- Analyzing File: %s" % (file)
-                    out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
+            for filepath in files:
+                if filepath.endswith(".pdf"):
+                    print "- Analyzing File: %s" % (filepath)
+                    out_filename = "%s/%s.json" % (root, filepath.split('/')[-1].split(".")[0])
                     out_file = open(out_filename, 'w')
-                    out_file.write(json.dumps(generate_json(os.path.join(root, file)), indent=4))
+                    filepath = os.path.join(root,filepath)
+                    metadata = file_metadata(filepath, "PDF")
+                    out_json = generate_json(filepath, metadata)
+                    out_file.write(json.dumps(out_json, indent=4))
                     out_file.close()
 
     elif options.in_text and options.out_path:
