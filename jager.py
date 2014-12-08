@@ -355,12 +355,12 @@ def main():
             for filepath in files:
                 if filepath.endswith(".pdf"):
                     print "- Analyzing File: %s" % (filepath)
-                    out_filename = "%s/%s.json" % (options.out_path, filepath.split('/')[-1].split(".")[0])
+                    out_filename = "%s/%s.json" % (root, filepath.split('/')[-1].split(".")[0])
                     out_file = open(out_filename, 'w')
                     filepath = os.path.join(root,filepath)
                     metadata = file_metadata(filepath, "PDF")
                     out_json = generate_json(filepath, metadata)
-                    out_file.write(json.dumps(out_json), indent=4)
+                    out_file.write(json.dumps(out_json, indent=4))
                     out_file.close()
 
     elif options.in_text and options.out_path:
