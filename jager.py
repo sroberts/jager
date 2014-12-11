@@ -110,10 +110,11 @@ def pdf_text_extractor(path):
 
         return str
 
-    except:
+    except PDFTextExtractionNotAllowed:
         # CATCH Text Extraction Failure
         # pdfminer.pdfdocument.PDFTextExtractionNotAllowed: Text extraction is not allowed: <open file '/Users/scottjroberts/Documents/src/APTnotes/2014/h12756-wp-shell-crew.pdf', mode 'rb' at 0x10bc01e40>
         # Todo: Should write error to a log
+        print "OMG POOPED THE BED!!!"
         raise
 
     print doc.info
@@ -380,6 +381,8 @@ def main():
                         out_file = open(out_filename, 'w')
                         out_file.write(json.dumps(generate_json(pdf_text_extractor(os.path.join(root, file)), file_metadata(os.path.join(root, file)), 'green'), indent=4))
                         out_file.close()
+                    except IOError:
+                        raise
                     except PDFTextExtractionNotAllowed:
                         print "Error: Text Extration failed for {}".format(file)
                         with open("error.txt", "a") as error:
