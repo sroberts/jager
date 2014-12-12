@@ -20,7 +20,8 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
-from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
+from pdfminer.pdfparser import PDFSyntaxError
+from pdfminer.pdfdocument import PDFTextExtractionNotAllowed, PDFEncryptionError
 from cStringIO import StringIO
 import bs4
 
@@ -110,15 +111,8 @@ def pdf_text_extractor(path):
 
         return str
 
-    except PDFTextExtractionNotAllowed:
-        # CATCH Text Extraction Failure
-        # pdfminer.pdfdocument.PDFTextExtractionNotAllowed: Text extraction is not allowed: <open file '/Users/scottjroberts/Documents/src/APTnotes/2014/h12756-wp-shell-crew.pdf', mode 'rb' at 0x10bc01e40>
-        # Todo: Should write error to a log
-        print "OMG POOPED THE BED!!!"
+    except:
         raise
-
-    print doc.info
-
 
 def www_text_extractor(target):
 
@@ -381,13 +375,24 @@ def main():
                         out_file = open(out_filename, 'w')
                         out_file.write(json.dumps(generate_json(pdf_text_extractor(os.path.join(root, file)), file_metadata(os.path.join(root, file)), 'green'), indent=4))
                         out_file.close()
-                    except IOError:
-                        raise
-                    except PDFTextExtractionNotAllowed:
-                        print "Error: Text Extration failed for {}".format(file)
+                    except IOError as e:
                         with open("error.txt", "a") as error:
-                            error.write("- Text Extration failed for {}".format(file))
+                            error.write("{} - IOError {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except PDFEncryptionError as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - PDF Encyption Error {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except PDFTextExtractionNotAllowed as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - PDF Text Extraction Not Allowed {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except PDFSyntaxError as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - PDF Syntax {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
                     except:
+                        print "MAJOR MAJOR SUPERBAD ERRROR: {}".format(os.path.join(root, file))
                         raise
 
     elif options.in_text and options.out_path:
