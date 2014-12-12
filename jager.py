@@ -208,6 +208,7 @@ def extract_urls(t):
     urls = re.findall(re_url, t)
     # eliminate repeats
     urls = list(set(urls))
+    filter(None,urls)
     urls.sort()
 
     print " - %d URLs detected." % len(urls)
