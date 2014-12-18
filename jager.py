@@ -20,6 +20,8 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFSyntaxError
+from pdfminer.pdfdocument import PDFTextExtractionNotAllowed, PDFEncryptionError
 from cStringIO import StringIO
 import bs4
 
@@ -51,6 +53,10 @@ logger.error('error message')
 logger.critical('critical message')
 '''
 
+# Setup File Magic
+m=magic.open(magic.MAGIC_MIME)
+m.load()
+
 # Indicators
 re_ipv4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", re.I | re.S | re.M)
 re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I | re.S | re.M)
@@ -73,6 +79,8 @@ re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
 
+# Switches
+VERBOSE = False
 
 # Text Extractors:
 def pdf_text_extractor(path):
@@ -98,15 +106,13 @@ def pdf_text_extractor(path):
         device.close()
         str = retstr.getvalue()
         retstr.close()
+
+        print "- Text Extracted"
+
         return str
 
     except:
-        # CATCH Text Extraction Failure
-        # pdfminer.pdfdocument.PDFTextExtractionNotAllowed: Text extraction is not allowed: <open file '/Users/scottjroberts/Documents/src/APTnotes/2014/h12756-wp-shell-crew.pdf', mode 'rb' at 0x10bc01e40>
         raise
-
-    print doc.info
-
 
 def www_text_extractor(target):
 
@@ -117,13 +123,15 @@ def www_text_extractor(target):
 
 
 # Meta Data
-def file_metadata(path, type):
+def file_metadata(path):
     print "- Extracting: Source File Metadata"
 
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
     filesize = os.path.getsize(path)
     filename = path.split('/')[-1]
-    filetype = magic.from_file(path)
+    filetype = m.file(path)
+
+    print "- Metadata Generated"
 
     return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
 
@@ -244,7 +252,7 @@ def extract_filenames(t):
 
 
 # Output Generators
-def generate_json(text, metadata):
+def generate_json(text, metadata, tlp='red'):
 
     group_json = {
         "group_name": [
@@ -269,6 +277,7 @@ def generate_json(text, metadata):
             "date_analyzed": time.strftime("%Y-%m-%d %H:%M"),
             "source": "??",
             "release_date": "??",
+            "tlp": tlp,
             "authors": [
                 "??"
             ],
@@ -327,6 +336,12 @@ def main():
                       dest="in_text",
                       default=None,
                       help="NOT IMPLIMENTED: Analyze textfile.")
+    # parser.add_option("-v", "--verbose",
+    #                   action="store",
+    #                   type="string",
+    #                   dest="verbose",
+    #                   default=True,
+    #                   help="Prints lots of status messages.")
 
     (options, args) = parser.parse_args()
 
@@ -334,7 +349,7 @@ def main():
         # Input of a PDF out to JSON
         out_file = open(os.path.abspath(options.out_path), 'w')
         in_file = os.path.abspath(options.in_pdf)
-        metadata = file_metadata(in_file, "PDF")
+        metadata = file_metadata(in_file)
 
         pdftext = pdf_text_extractor(in_file)
         outjson = json.dumps(generate_json(pdftext, metadata), indent=4)
@@ -353,16 +368,33 @@ def main():
         print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (options.in_directory, options.out_path)
 
         for root, dirs, files in os.walk(os.path.abspath(options.in_directory)):
-            for filepath in files:
-                if filepath.endswith(".pdf"):
-                    print "- Analyzing File: %s" % (filepath)
-                    out_filename = "%s/%s.json" % (root, filepath.split('/')[-1].split(".")[0])
-                    out_file = open(out_filename, 'w')
-                    filepath = os.path.join(root,filepath)
-                    metadata = file_metadata(filepath, "PDF")
-                    out_json = generate_json(filepath, metadata)
-                    out_file.write(json.dumps(out_json, indent=4))
-                    out_file.close()
+            for file in files:
+                if file.endswith(".pdf"):
+                    try:
+                        print "- Analyzing File: %s" % (file)
+                        out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
+                        out_file = open(out_filename, 'w')
+                        out_file.write(json.dumps(generate_json(pdf_text_extractor(os.path.join(root, file)), file_metadata(os.path.join(root, file)), 'green'), indent=4))
+                        out_file.close()
+                    except IOError as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - IOError {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except PDFEncryptionError as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - PDF Encyption Error {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except PDFTextExtractionNotAllowed as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - PDF Text Extraction Not Allowed {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except PDFSyntaxError as e:
+                        with open("error.txt", "a") as error:
+                            error.write("{} - PDF Syntax {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+
+                    except:
+                        print "MAJOR MAJOR SUPERBAD ERRROR: {}".format(os.path.join(root, file))
+                        raise
 
     elif options.in_text and options.out_path:
         # Input of a textfile and output to json

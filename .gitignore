@@ -49,3 +49,5 @@ venv
 *.swp
 
 .ipynb_checkpoints
+
+error.txt
