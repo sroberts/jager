@@ -7,23 +7,25 @@ Created by Scott Roberts.
 Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
-from optparse import OptionParser
-import re
-import json
-import time
 import hashlib
+import json
 import os
-import requests
-import magic
+import re
+import time
+from cStringIO import StringIO
+from optparse import OptionParser
 
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+import bs4
+import magic
+import requests
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFEncryptionError
+from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
+from pdfminer.pdfinterp import PDFPageInterpreter
+from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFSyntaxError
-from pdfminer.pdfdocument import PDFTextExtractionNotAllowed, PDFEncryptionError
-from cStringIO import StringIO
-import bs4
 
 '''
 # Setup Logging
@@ -54,7 +56,7 @@ logger.critical('critical message')
 '''
 
 # Setup File Magic
-m=magic.open(magic.MAGIC_MIME)
+m = magic.open(magic.MAGIC_MIME)
 m.load()
 
 # Indicators
@@ -83,6 +85,8 @@ re_flash = '\W([\w-]+\.)(flv|swf)'
 VERBOSE = False
 
 # Text Extractors:
+
+
 def pdf_text_extractor(path):
     '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
 
@@ -113,6 +117,7 @@ def pdf_text_extractor(path):
 
     except:
         raise
+
 
 def www_text_extractor(target):
 
@@ -216,7 +221,7 @@ def extract_urls(t):
     urls = re.findall(re_url, t)
     # eliminate repeats
     urls = list(set(urls))
-    filter(None,urls)
+    filter(None, urls)
     urls.sort()
 
     print " - %d URLs detected." % len(urls)
