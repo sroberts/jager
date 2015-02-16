@@ -1,5 +1,4 @@
-import nose
-from jager import *
+from jager import extract_cves
 
 
 def test_cve():

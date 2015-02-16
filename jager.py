@@ -62,9 +62,13 @@ m.load()
 # Indicators
 re_ipv4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", re.I | re.S | re.M)
 re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I | re.S | re.M)
-re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
+re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|\
+cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum\
+|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
 re_cve = re.compile("(CVE-(19|20)\\d{2}-\\d{4,7})", re.I | re.S | re.M)
-re_url = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
+re_url = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)\
+(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)\
+|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
 
 # Hashes
 re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I | re.S | re.M)
@@ -311,7 +315,8 @@ def main():
     '''Where the initial work happens...'''
     title()
 
-    parser = OptionParser(usage="usage: %prog [options] input (-p, -d, -u, -t) arguement -o/--out filename")
+    parser = OptionParser(usage="usage: %prog [options] input (-p, -d, -u, -t)\
+    arguement -o/--out filename")
     parser.add_option("-p", "--pdf",
                       action="store",
                       type="string",
@@ -369,6 +374,8 @@ def main():
 
         r = requests.get(options.in_url)
 
+        return r
+
     elif options.in_directory and options.out_path:
         # Input of a directory, expand directory, and output to json
         print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (options.in_directory, options.out_path)
@@ -380,7 +387,10 @@ def main():
                         print "- Analyzing File: %s" % (file)
                         out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
-                        out_file.write(json.dumps(generate_json(pdf_text_extractor(os.path.join(root, file)), file_metadata(os.path.join(root, file)), 'green'), indent=4))
+                        out_file.write(json.dumps(generate_json(
+                            pdf_text_extractor(os.path.join(root, file)),
+                            file_metadata(os.path.join(root, file)),
+                            'green'), indent=4))
                         out_file.close()
                     except IOError as e:
                         with open("error.txt", "a") as error:
@@ -388,11 +398,13 @@ def main():
 
                     except PDFEncryptionError as e:
                         with open("error.txt", "a") as error:
-                            error.write("{} - PDF Encyption Error {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+                            error.write("{} - PDF Encyption Error {}\n".format(time.strftime("%Y-%m-%d %H:%M"),
+                                                                               os.path.join(root, file), e))
 
                     except PDFTextExtractionNotAllowed as e:
                         with open("error.txt", "a") as error:
-                            error.write("{} - PDF Text Extraction Not Allowed {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
+                            error.write("{0} - PDF Text Extraction Not Allowed {1}\n".format(time.strftime("%Y-%m-%d %H:%M"),
+                                                                                             os.path.join(root, file), e))
 
                     except PDFSyntaxError as e:
                         with open("error.txt", "a") as error:

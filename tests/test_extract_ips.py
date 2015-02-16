@@ -1,5 +1,4 @@
-import nose
-from jager import *
+from jager import extract_ips
 
 
 def test_extract_ips():
