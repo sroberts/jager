@@ -1,3 +1,4 @@
+# import nose
 from jager import extract_cves
 
 
