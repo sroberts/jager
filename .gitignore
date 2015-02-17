@@ -51,3 +51,5 @@ venv
 .ipynb_checkpoints
 
 error.txt
+# Default output
+output.json
