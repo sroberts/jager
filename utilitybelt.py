@@ -15,10 +15,10 @@ A library to make you a Python CND Batman
 
 import re
 import socket
-import struct
 
 import GeoIP
 import requests
+from netaddr import IPAddress
 from netaddr import IPNetwork
 
 gi = GeoIP.open("./data/GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
@@ -51,88 +51,31 @@ re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
 
 # TODO: submit this upstream
-whitelist = [{'net': IPNetwork('10.0.0.0/8'), 'org': 'Private per RFC 1918'},
-             {'net': IPNetwork('172.16.0.0/12'), 'org': 'Private per RFC 1918'},
-             {'net': IPNetwork('192.168.0.0/16'), 'org': 'Private per RFC 1918'},
-             {'net': IPNetwork('0.0.0.0/8'), 'org': 'Invalid per RFC 1122'},
-             {'net': IPNetwork('127.0.0.0/8'), 'org': 'Loopback per RFC 1122'},
-             {'net': IPNetwork('169.254.0.0/16'), 'org': 'Link-local per RFC 3927'},
-             {'net': IPNetwork('100.64.0.0/10'), 'org': 'Shared address space per RFC 6598'},
-             {'net': IPNetwork('192.0.0.0/24'), 'org': 'IETF Protocol Assignments per RFC 6890'},
-             {'net': IPNetwork('192.0.2.0/24'), 'org': 'Documentation and examples per RFC 6890'},
-             {'net': IPNetwork('192.88.99.0/24'), 'org': 'IPv6 to IPv4 relay per RFC 3068'},
-             {'net': IPNetwork('198.18.0.0/15'), 'org': 'Network benchmark tests per RFC 2544'},
-             {'net': IPNetwork('198.51.100.0/24'), 'org': 'Documentation and examples per RFC 5737'},
-             {'net': IPNetwork('203.0.113.0/24'), 'org': 'Documentation and examples per RFC 5737'},
-             {'net': IPNetwork('224.0.0.0/4'), 'org': 'IP multicast per RFC 5771'},
-             {'net': IPNetwork('240.0.0.0/4'), 'org': 'Reserved per RFC 1700'},
-             {'net': IPNetwork('255.255.255.255/32'), 'org': 'Broadcast address per RFC 919'}]
+reserved_nets = [{'net': IPNetwork('10.0.0.0/8'), 'org': 'Private per RFC 1918'},
+                 {'net': IPNetwork('172.16.0.0/12'), 'org': 'Private per RFC 1918'},
+                 {'net': IPNetwork('192.168.0.0/16'), 'org': 'Private per RFC 1918'},
+                 {'net': IPNetwork('0.0.0.0/8'), 'org': 'Invalid per RFC 1122'},
+                 {'net': IPNetwork('127.0.0.0/8'), 'org': 'Loopback per RFC 1122'},
+                 {'net': IPNetwork('169.254.0.0/16'), 'org': 'Link-local per RFC 3927'},
+                 {'net': IPNetwork('100.64.0.0/10'), 'org': 'Shared address space per RFC 6598'},
+                 {'net': IPNetwork('192.0.0.0/24'), 'org': 'IETF Protocol Assignments per RFC 6890'},
+                 {'net': IPNetwork('192.0.2.0/24'), 'org': 'Documentation and examples per RFC 6890'},
+                 {'net': IPNetwork('192.88.99.0/24'), 'org': 'IPv6 to IPv4 relay per RFC 3068'},
+                 {'net': IPNetwork('198.18.0.0/15'), 'org': 'Network benchmark tests per RFC 2544'},
+                 {'net': IPNetwork('198.51.100.0/24'), 'org': 'Documentation and examples per RFC 5737'},
+                 {'net': IPNetwork('203.0.113.0/24'), 'org': 'Documentation and examples per RFC 5737'},
+                 {'net': IPNetwork('224.0.0.0/4'), 'org': 'IP multicast per RFC 5771'},
+                 {'net': IPNetwork('240.0.0.0/4'), 'org': 'Reserved per RFC 1700'},
+                 {'net': IPNetwork('255.255.255.255/32'), 'org': 'Broadcast address per RFC 919'}]
 
 useragent = 'Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0'
 
 
-def ip_to_long(ip):
-    """Convert an IPv4Address string to long"""
-    packedIP = socket.inet_aton(ip)
-    return struct.unpack("!L", packedIP)[0]
-
-
-def ip_between(ip, start, finish):
-    """Checks to see if IP is between start and finish"""
-
-    if is_ipv4(ip) and is_ipv4(start) and is_ipv4(finish):
-        ip_long = ip_to_long(ip)
-        start_long = ip_to_long(start)
-        finish_long = ip_to_long(finish)
-
-        if start_long <= ip_long <= finish_long:
-            return True
-        else:
-            return False
-    else:
-        return False
-
-
-def is_rfc1918(ip):
-    if ip_between(ip, "10.0.0.0", "10.255.255.255"):
-        return True
-    elif ip_between(ip, "172.16.0.0", "172.31.255.255"):
-        return True
-    elif ip_between(ip, "192.168.0.0", "192.168.255.255"):
-        return True
-    else:
-        return False
-
-
 def is_reserved(ip):
-    if ip_between(ip, "0.0.0.0", "0.255.255.255"):
-        return True
-    elif ip_between(ip, "10.0.0.0", "10.255.255.255"):
-        return True
-    elif ip_between(ip, "100.64.0.0", "100.127.255.255"):
-        return True
-    elif ip_between(ip, "127.0.0.0", "127.255.255.255"):
-        return True
-    elif ip_between(ip, "169.254.0.0", "169.254.255.255"):
-        return True
-    elif ip_between(ip, "172.16.0.0", "172.31.255.255"):
-        return True
-    elif ip_between(ip, "192.0.0.0", "192.0.0.255"):
-        return True
-    elif ip_between(ip, "192.0.2.0", "192.0.2.255"):
-        return True
-    elif ip_between(ip, "192.88.99.0", "192.88.99.255"):
-        return True
-    elif ip_between(ip, "192.168.0.0", "192.168.255.255"):
-        return True
-    elif ip_between(ip, "198.18.0.0", "198.19.255.255"):
-        return True
-    elif ip_between(ip, "198.51.100.0", "198.51.100.255"):
-        return True
-    elif ip_between(ip, "203.0.113.0", "203.0.113.255"):
-        return True
-    elif ip_between(ip, "224.0.0.0", "255.255.255.255"):
-        return True
+    addr = IPAddress(ip)
+    for each in reserved_nets:
+        if addr in each['net']:
+            return True
     else:
         return False
 
@@ -221,7 +164,7 @@ def ips_to_geojson(ipaddresses):
 def reverse_dns_sna(ipaddress):
     """Returns a list of the dns names that point to a given ipaddress using StatDNS API"""
 
-    r = requests.get("http://api.statdns.com/x/%s" % ipaddress)
+    r = requests.get("http://api.statdns.com/x/{0}".format(ipaddress))
 
     if r.status_code == 200:
         names = []
@@ -232,7 +175,7 @@ def reverse_dns_sna(ipaddress):
 
         return names
     else:
-        raise Exception("No PTR record for %s" % ipaddress)
+        raise Exception("No PTR record for {0}".format(ipaddress))
         return ""
 
 
@@ -276,7 +219,7 @@ def he_ip_check(ip):
     if not is_ipv4(ip):
         return None
 
-    url = 'http://bgp.he.net/ip/%s#_dns' % ip
+    url = 'http://bgp.he.net/ip/{0}#_dns'.format(ip)
     headers = {'User-Agent': useragent}
     response = requests.get(url, headers=headers)
     if response.text:
@@ -293,7 +236,7 @@ def he_name_check(domain):
     if not is_fqdn(domain):
         return None
 
-    url = 'http://bgp.he.net/dns/%s#_whois' % domain
+    url = 'http://bgp.he.net/dns/{0}#_whois'.format(domain)
     headers = {'User-Agent': useragent}
     response = requests.get(url, headers=headers)
     if response.text:
@@ -311,7 +254,7 @@ def isc_ip_check(ip):
         return None
 
     try:
-        url = 'https://isc.sans.edu/api/ip/%s?json' % ip
+        url = 'https://isc.sans.edu/api/ip/{0}?json'.format(ip)
         headers = {'User-Agent': useragent}
         response = requests.get(url, headers=headers)
         data = response.json()
@@ -328,7 +271,7 @@ def pdns_ip_check(ip, dnsdb_api):
     if not is_ipv4(ip):
         return None
 
-    url = 'https://api.dnsdb.info/lookup/rdata/ip/%s?limit=50' % ip
+    url = 'https://api.dnsdb.info/lookup/rdata/ip/{0}?limit=50'.format(ip)
     headers = {'Accept': 'application/json', 'X-Api-Key': dnsdb_api}
 
     response = requests.get(url, headers=headers)
@@ -340,7 +283,7 @@ def pdns_name_check(name, dnsdb_api):
     if not is_fqdn(name):
         return None
 
-    url = 'https://api.dnsdb.info/lookup/rrset/name/%s?limit=50' % name
+    url = 'https://api.dnsdb.info/lookup/rrset/name/{0}?limit=50'.format(name)
     headers = {'Accept': 'application/json', 'X-Api-Key': dnsdb_api}
 
     response = requests.get(url, headers=headers)
@@ -352,5 +295,5 @@ def ipinfo_ip_check(ip):
     if not is_ipv4(ip):
         return None
 
-    response = requests.get('http://ipinfo.io/%s/json' % ip)
+    response = requests.get('http://ipinfo.io/{0}/json'.format(ip))
     return response.json()
