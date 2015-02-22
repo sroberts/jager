@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# encoding: utf-8
 """
  _   _ _   _ _ _ _          ______      _ _
 | | | | | (_) (_) |         | ___ \    | | |
@@ -11,23 +13,29 @@
 A library to make you a Python CND Batman
 """
 
-import GeoIP
-import json
-import netaddr
 import re
-import requests
 import socket
-from PassiveTotal import PassiveTotal
-from bs4 import BeautifulSoup
 import struct
+
+import GeoIP
+import requests
+from bs4 import BeautifulSoup
+from netaddr import IPNetwork
+from PassiveTotal import PassiveTotal
 
 gi = GeoIP.open("./data/GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
 
 # Indicators
-re_ipv4 = re.compile('(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)', re.I | re.S | re.M)
+re_ipv4 = re.compile("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)", re.I | re.S | re.M)
 re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I | re.S | re.M)
 re_fqdn = re.compile('(?=^.{4,255}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)', re.I | re.S | re.M)
+re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|\
+cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum\
+|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
 re_cve = re.compile("(CVE-(19|20)\\d{2}-\\d{4,7})", re.I | re.S | re.M)
+re_url = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)\
+(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)\
+|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
 
 # Hashes
 re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I | re.S | re.M)
@@ -38,7 +46,7 @@ re_ssdeep = re.compile("\\b\\d{2}:[A-Za-z0-9/+]{3,}:[A-Za-z0-9/+]{3,}\\b", re.I 
 
 # File Types
 re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
-re_web = '\W([\w-]+\.)(html|php|js)'
+re_web = '\W([\w-]+\.)(html|htm|php|js)'
 re_exe = '\W([\w-]+\.)(exe|dll|jar)'
 re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
@@ -97,37 +105,39 @@ def is_rfc1918(ip):
     else:
         return False
 
+
 def is_reserved(ip):
-    if ip_between (ip, "0.0.0.0", "0.255.255.255"):
+    if ip_between(ip, "0.0.0.0", "0.255.255.255"):
         return True
-    elif ip_between (ip, "10.0.0.0", "10.255.255.255"):
+    elif ip_between(ip, "10.0.0.0", "10.255.255.255"):
         return True
-    elif ip_between (ip, "100.64.0.0", "100.127.255.255"):
+    elif ip_between(ip, "100.64.0.0", "100.127.255.255"):
         return True
-    elif ip_between (ip, "127.0.0.0", "127.255.255.255"):
+    elif ip_between(ip, "127.0.0.0", "127.255.255.255"):
         return True
-    elif ip_between (ip, "169.254.0.0", "169.254.255.255"):
+    elif ip_between(ip, "169.254.0.0", "169.254.255.255"):
         return True
-    elif ip_between (ip, "172.16.0.0", "172.31.255.255"):
+    elif ip_between(ip, "172.16.0.0", "172.31.255.255"):
         return True
-    elif ip_between (ip, "192.0.0.0", "192.0.0.255"):
+    elif ip_between(ip, "192.0.0.0", "192.0.0.255"):
         return True
-    elif ip_between (ip, "192.0.2.0", "192.0.2.255"):
+    elif ip_between(ip, "192.0.2.0", "192.0.2.255"):
         return True
-    elif ip_between (ip, "192.88.99.0", "192.88.99.255"):
+    elif ip_between(ip, "192.88.99.0", "192.88.99.255"):
         return True
-    elif ip_between (ip, "192.168.0.0", "192.168.255.255"):
+    elif ip_between(ip, "192.168.0.0", "192.168.255.255"):
         return True
-    elif ip_between (ip, "198.18.0.0", "198.19.255.255"):
+    elif ip_between(ip, "198.18.0.0", "198.19.255.255"):
         return True
-    elif ip_between (ip, "198.51.100.0", "198.51.100.255"):
+    elif ip_between(ip, "198.51.100.0", "198.51.100.255"):
         return True
-    elif ip_between (ip, "203.0.113.0", "203.0.113.255"):
+    elif ip_between(ip, "203.0.113.0", "203.0.113.255"):
         return True
-    elif ip_between (ip, "224.0.0.0", "255.255.255.255"):
+    elif ip_between(ip, "224.0.0.0", "255.255.255.255"):
         return True
     else:
         return False
+
 
 def is_ipv4(ipv4address):
     """Returns true for valid IPv4 Addresses, false for invalid."""
@@ -320,7 +330,6 @@ def pdns_ip_check(ip, dnsdb_api):
     if not is_ipv4(ip):
         return None
 
-    pdns_results = []
     url = 'https://api.dnsdb.info/lookup/rdata/ip/%s?limit=50' % ip
     headers = {'Accept': 'application/json', 'X-Api-Key': dnsdb_api}
 
@@ -330,10 +339,9 @@ def pdns_ip_check(ip, dnsdb_api):
 
 def pdns_name_check(name, dnsdb_api):
     """Checks Farsight passive DNS for information on a name"""
-    if not is_fqdn(ip):
+    if not is_fqdn(name):
         return None
 
-    pdns_results = []
     url = 'https://api.dnsdb.info/lookup/rrset/name/%s?limit=50' % name
     headers = {'Accept': 'application/json', 'X-Api-Key': dnsdb_api}
 
