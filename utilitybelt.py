@@ -19,9 +19,7 @@ import struct
 
 import GeoIP
 import requests
-from bs4 import BeautifulSoup
 from netaddr import IPNetwork
-from PassiveTotal import PassiveTotal
 
 gi = GeoIP.open("./data/GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
 
@@ -356,88 +354,3 @@ def ipinfo_ip_check(ip):
 
     response = requests.get('http://ipinfo.io/%s/json' % ip)
     return response.json()
-
-
-def ipvoid_check(ip):
-    """Checks IPVoid.com for info on an IP address"""
-    if not is_ipv4(ip):
-        return None
-
-    return_dict = dict()
-    url = 'http://ipvoid.com/scan/%s/' % ip
-    response = requests.get(url)
-    data = BeautifulSoup(response.text)
-    if data.findAll('span', attrs={'class': 'label label-success'}):
-        return None
-    elif data.findAll('span', attrs={'class': 'label label-danger'}):
-        for each in data.findAll('img', alt='Alert'):
-            detect_site = each.parent.parent.td.text.lstrip()
-            detect_url = each.parent.a['href']
-            return_dict[detect_site] = detect_url
-    else:
-        return None
-
-    if len(return_dict) == 0:
-        return None
-    return return_dict
-
-
-def urlvoid_check(name):
-    """Checks URLVoid.com for info on a domain"""
-    if not is_fqdn(name):
-        return None
-
-    return_dict = dict()
-    url = 'http://urlvoid.com/scan/%s/' % name
-    response = requests.get(url)
-    data = BeautifulSoup(response.text)
-    if data.findAll('div', attrs={'class': 'bs-callout bs-callout-info'}):
-        return None
-    elif data.findAll('div', attrs={'class': 'bs-callout bs-callout-warning'}):
-        for each in data.findAll('img', alt='Alert'):
-            detect_site = each.parent.parent.td.text.lstrip()
-            detect_url = each.parent.a['href']
-            return_dict[detect_site] = detect_url
-
-    if len(return_dict) == 0:
-        return None
-    return return_dict
-
-
-def urlvoid_ip_check(ip):
-    """Checks URLVoid.com for info on an IP address"""
-    if not is_ipv4(ip):
-        return None
-
-    return_dict = dict()
-    url = 'http://urlvoid.com/ip/%s/' % ip
-    response = requests.get(url)
-    data = BeautifulSoup(response.text)
-    h1 = data.findAll('h1')[0].text
-    if h1 == 'Report not found':
-        return None
-    elif re.match('^IP', h1):
-        return_dict['bad_names'] = []
-        return_dict['other_names'] = []
-        for each in data.findAll('img', alt='Alert'):
-            return_dict['bad_names'].append(each.parent.text.strip())
-        for each in data.findAll('img', alt='Valid'):
-            return_dict['other_names'].append(each.parent.text.strip())
-    else:
-        return None
-
-    if len(return_dict) == 0:
-        return None
-    return return_dict
-
-
-def pt_check(addr, pt_api):
-    """Check PassiveTotal for info on an IP address or name"""
-    # TODO: Replace with is_ipv4() and is_dns()
-    if is_ipv4(addr) or is_fqdn(addr):
-        pt = PassiveTotal(pt_api)
-        results = pt.search(addr)
-        if results['success']:
-            return results['results']
-    else:
-        return None
