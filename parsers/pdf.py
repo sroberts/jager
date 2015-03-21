@@ -14,8 +14,9 @@ from cStringIO import StringIO
 
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
-# from pdfminer.pdfdocument import PDFEncryptionError
-# from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
+from pdfminer.pdfdocument import PDFEncryptionError
+from pdfminer.pdfdocument import PDFSyntaxError
+from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfpage import PDFPage
@@ -52,6 +53,18 @@ class JagerPDF:
             device.close()
             str = retstr.getvalue()
             retstr.close()
+
+        except PDFEncryptionError:
+            raise
+
+        except PDFTextExtractionNotAllowed:
+            raise
+
+        except PDFSyntaxError:
+            raise
+
+        except:
+            raise
 
             self.text = str
 

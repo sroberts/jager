@@ -12,19 +12,11 @@ import json
 import os
 import re
 import time
-from cStringIO import StringIO
 from optparse import OptionParser
 
 import magic
 import requests
-from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfdocument import PDFEncryptionError
-from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
-from pdfminer.pdfinterp import PDFPageInterpreter
-from pdfminer.pdfinterp import PDFResourceManager
-from pdfminer.pdfpage import PDFPage
-from pdfminer.pdfparser import PDFSyntaxError
+from parsers.pdf import JagerPDF
 
 '''
 # Setup Logging
@@ -83,45 +75,9 @@ re_flash = '\W([\w-]+\.)(flv|swf)'
 # Switches
 VERBOSE = False
 
-# Text Extractors:
-
-
-def pdf_text_extractor(path):
-    '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
-
-    print "- Extracting: PDF Text - %s" % (path.split("/")[-1])
-
-    try:
-        rsrcmgr = PDFResourceManager()
-        retstr = StringIO()
-        codec = 'utf-8'
-        laparams = LAParams()
-        device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
-        fp = file(path, 'rb')
-        interpreter = PDFPageInterpreter(rsrcmgr, device)
-        password = ""
-        maxpages = 0
-        caching = True
-        pagenos = set()
-        for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password, caching=caching, check_extractable=True):
-            interpreter.process_page(page)
-        fp.close()
-        device.close()
-        str = retstr.getvalue()
-        retstr.close()
-
-        print "- Text Extracted"
-
-        return str
-
-    except:
-        raise
-
-
 # Meta Data
 
 
-# Meta Data
 def file_metadata(path):
     print "- Extracting: Source File Metadata"
 
@@ -352,7 +308,7 @@ def main():
         in_file = os.path.abspath(options.in_pdf)
         metadata = file_metadata(in_file)
 
-        pdftext = pdf_text_extractor(in_file)
+        pdftext = str(JagerPDF(in_file))
         outjson = json.dumps(generate_json(pdftext, metadata), indent=4)
 
         out_file.write(outjson)
@@ -377,32 +333,15 @@ def main():
                         print "- Analyzing File: %s" % (file)
                         out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
+
                         out_file.write(json.dumps(generate_json(
-                            pdf_text_extractor(os.path.join(root, file)),
+                            str(JagerPDF(os.path.join(root, file))),
                             file_metadata(os.path.join(root, file)),
                             'green'), indent=4))
                         out_file.close()
                     except IOError as e:
                         with open("error.txt", "a") as error:
                             error.write("{} - IOError {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
-
-                    except PDFEncryptionError as e:
-                        with open("error.txt", "a") as error:
-                            error.write("{} - PDF Encyption Error {}\n".format(time.strftime("%Y-%m-%d %H:%M"),
-                                                                               os.path.join(root, file), e))
-
-                    except PDFTextExtractionNotAllowed as e:
-                        with open("error.txt", "a") as error:
-                            error.write("{0} - PDF Text Extraction Not Allowed {1}\n".format(time.strftime("%Y-%m-%d %H:%M"),
-                                                                                             os.path.join(root, file), e))
-
-                    except PDFSyntaxError as e:
-                        with open("error.txt", "a") as error:
-                            error.write("{} - PDF Syntax {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
-
-                    except:
-                        print "MAJOR MAJOR SUPERBAD ERRROR: {}".format(os.path.join(root, file))
-                        raise
 
     elif options.in_text and options.out_path:
         # Input of a textfile and output to json
