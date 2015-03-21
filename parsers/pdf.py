@@ -66,10 +66,7 @@ class JagerPDF:
         except:
             raise
 
-            self.text = str
-
-        except:
-            raise
+        self.text = str
 
     def __str__(self):
         return self.text
