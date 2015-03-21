@@ -15,7 +15,6 @@ import time
 from cStringIO import StringIO
 from optparse import OptionParser
 
-import bs4
 import magic
 import requests
 from pdfminer.converter import TextConverter
@@ -119,12 +118,7 @@ def pdf_text_extractor(path):
         raise
 
 
-def www_text_extractor(target):
-
-    response = requests.get(target)
-    soup = bs4.BeautifulSoup(response.text)
-    [s.extract() for s in soup('script')]
-    return soup.body.get_text()
+# Meta Data
 
 
 # Meta Data
@@ -421,10 +415,10 @@ def main():
     return True
 
 
-def test_main():
-    url = "http://contagiodump.blogspot.com/2014/07/cz-solution-ltd-signed-samples-of.html"
-    print "Trying to Text Extract %s" % url
-    print generate_json(www_text_extractor(url), {'source', url})
+# def test_main():
+#     url = "http://contagiodump.blogspot.com/2014/07/cz-solution-ltd-signed-samples-of.html"
+#     print "Trying to Text Extract %s" % url
+#     print generate_json(www_text_extractor(url), {'source', url})
 
 
 if __name__ == "__main__":
