@@ -78,7 +78,7 @@ VERBOSE = False
 # Meta Data
 
 
-def file_metadata(path):
+def file_metadata(path, tlp='green'):
     print "- Extracting: Source File Metadata"
 
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
