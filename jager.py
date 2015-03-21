@@ -16,7 +16,7 @@ from cStringIO import StringIO
 from optparse import OptionParser
 
 import bs4
-import magic as m
+import magic
 import requests
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -54,10 +54,6 @@ logger.warn('warn message')
 logger.error('error message')
 logger.critical('critical message')
 '''
-
-# Setup File Magic
-# m = magic.open(magic.MAGIC_MIME)
-# m.load()
 
 # Indicators
 re_ipv4 = re.compile("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)", re.I | re.S | re.M)
@@ -138,7 +134,7 @@ def file_metadata(path):
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
     filesize = os.path.getsize(path)
     filename = path.split('/')[-1]
-    filetype = m.from_file(path)
+    filetype = magic.from_file(path)
 
     print "- Metadata Generated"
 
