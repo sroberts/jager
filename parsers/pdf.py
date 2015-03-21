@@ -30,7 +30,7 @@ class JagerPDF:
     text = ""
 
     def __init__(self, pdf_file_path):
-        self.extractor(pdf_file_path)
+        self.text = self.extractor(pdf_file_path)
 
     def extractor(self, path):
         '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
@@ -66,7 +66,7 @@ class JagerPDF:
         except:
             raise
 
-        self.text = str
+        return str
 
     def __str__(self):
         return self.text
