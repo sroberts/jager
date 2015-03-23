@@ -15,6 +15,7 @@ import re
 import sys
 import time
 from cStringIO import StringIO
+from datetime import datetime
 
 import bs4
 import magic as m
@@ -298,6 +299,12 @@ def generate_json(text, metadata, tlp='red'):
     return group_json
 
 
+def get_time():
+    now = datetime.isoformat(datetime.now())
+    now = now.replace(':', '_').split('.')[0]
+    return now
+
+
 def title():
     ascii_art = """
    __
@@ -340,18 +347,22 @@ def main():
 
     if args.in_pdf and args.out_path:
         # Input of a PDF out to JSON
-        out_file = open(os.path.abspath(args.out_path), "w")
-        # Should we gracefully handle this?
-        # Maybe generate a $filename_<increment_by_1>
-        # Example:
-        # if os.path.exists(os.path.abspath(args.out_path)):
-        #     print "error: output file %s all ready exists!"
-        #     new_out = args.out_out + "_%d" % (random.randint(0,25))
-        ##
+        if os.path.exists(os.path.abspath(args.out_path)):
+            print 'error: output file %s all ready exists!' % args.out_path
+            out_path = '%s_%s.json' % (os.path.splitext(args.out_path)[0], get_time())
+            print 'using output file %s' % out_path
+        else:
+            out_path = args.out_path
+
+        out_file = open(os.path.abspath(out_path), 'w')
+
+        if not os.path.exists(os.path.abspath(args.in_pdf)):
+            print 'error: input PDF %s does not exist!' % args.in_pdf
+            out_file.close()
+            os.remove(os.path.abspath(out_path))
+            sys.exit(1)
         in_file = os.path.abspath(args.in_pdf)
-        # Gracefully handle non-existing input files?
-        # if not os.path.exists(in_file):
-        #     print "error: input file %s does not exist!"
+
         metadata = file_metadata(in_file)
 
         pdftext = pdf_text_extractor(in_file)
