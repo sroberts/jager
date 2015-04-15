@@ -7,12 +7,13 @@ Created by Scott Roberts.
 Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
+import argparse
 import hashlib
 import json
 import os
 import re
+import sys
 import time
-from optparse import OptionParser
 
 import magic
 import requests
@@ -243,6 +244,12 @@ def generate_json(text, metadata, tlp='red'):
     return group_json
 
 
+def get_time():
+    now = datetime.isoformat(datetime.now())
+    now = now.replace(':', '_').split('.')[0]
+    return now
+
+
 def title():
     ascii_art = """
    __
@@ -261,51 +268,46 @@ def main():
     '''Where the initial work happens...'''
     title()
 
-    parser = OptionParser(usage="usage: %prog [options] input (-p, -d, -u, -t)\
-    arguement -o/--out filename")
-    parser.add_option("-p", "--pdf",
-                      action="store",
-                      type="string",
-                      dest="in_pdf",
-                      default=None,
-                      help="Specify an input.")
-    parser.add_option("-o", "--out",
-                      action="store",
-                      type="string",
-                      dest="out_path",
-                      default="output.json",
-                      help="Specify an output.")
-    parser.add_option("-d", "--directory",
-                      action="store",
-                      type="string",
-                      dest="in_directory",
-                      default=None,
-                      help="WIP: Specify a directory to analyze.")
-    parser.add_option("-u", "--url",
-                      action="store",
-                      type="string",
-                      dest="in_url",
-                      default=None,
-                      help="WIP: Analyze webpage.")
-    parser.add_option("-t", "--text",
-                      action="store",
-                      type="string",
-                      dest="in_text",
-                      default=None,
-                      help="NOT IMPLIMENTED: Analyze textfile.")
-    # parser.add_option("-v", "--verbose",
-    #                   action="store",
-    #                   type="string",
-    #                   dest="verbose",
-    #                   default=True,
-    #                   help="Prints lots of status messages.")
+    parser = argparse.ArgumentParser(prog=sys.argv[0])
 
-    (options, args) = parser.parse_args()
+    parser.add_argument("-p", "--pdf", help="Specify an input.", action="store",
+                        default=None, type=str, dest="in_pdf", required=False)
 
-    if options.in_pdf and options.out_path:
+    parser.add_argument("-o", "--output", help="Specify an output.", action="store",
+                        default="output.json", type=str, dest="out_path", required=False)
+
+    parser.add_argument("-d", "--directory", help="WIP: Specify a directory to analyze.",
+                        action="store", default=None, type=str, dest="in_directory", required=False)
+
+    parser.add_argument("-u", "--url", help="WIP: Analyze webpage.", action="store",
+                        default=None, type=str, dest="in_url", required=False)
+
+    parser.add_argument("-t", "--text", help="NOT IMPLIMENTED: Analyze text file.",
+                        action="store", default=None, type=str, dest="in_text", required=False)
+
+    parser.add_argument("-v", "--verbose", help="Prints lots of status messages.",
+                        action="store_true", dest="verbose", default=True, required=False)
+
+    args = parser.parse_args()
+
+    if args.in_pdf and args.out_path:
         # Input of a PDF out to JSON
-        out_file = open(os.path.abspath(options.out_path), 'w')
-        in_file = os.path.abspath(options.in_pdf)
+        if os.path.exists(os.path.abspath(args.out_path)):
+            print 'error: output file %s all ready exists!' % args.out_path
+            out_path = '%s_%s.json' % (os.path.splitext(args.out_path)[0], get_time())
+            print 'using output file %s' % out_path
+        else:
+            out_path = args.out_path
+
+        out_file = open(os.path.abspath(out_path), 'w')
+
+        if not os.path.exists(os.path.abspath(args.in_pdf)):
+            print 'error: input PDF %s does not exist!' % args.in_pdf
+            out_file.close()
+            os.remove(os.path.abspath(out_path))
+            sys.exit(1)
+        in_file = os.path.abspath(args.in_pdf)
+
         metadata = file_metadata(in_file)
 
         pdftext = str(JagerPDF(in_file))
@@ -314,24 +316,43 @@ def main():
         out_file.write(outjson)
         out_file.close()
 
-    elif options.in_url and options.out_path:
+    elif args.in_url and args.out_path:
         # Input of a website out to JSON
-        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, options.out_path)
+        print "WIP: You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
 
-        r = requests.get(options.in_url)
-
+        # Should we be verifying this is a valid URL?
+        r = requests.get(args.in_url)
         return r
+        # You aren"t writing the JSON response here to anything, right?
+        # It just returns the requests object.
+        # should it be something like:
+        # r = requests.get(options.in_url)
+        # if r.status_code == 200:
+        #     json_out = r.json()
+        #     ....
+        #     out_file.write(json_out)
+        #     out_file.close()
 
-    elif options.in_directory and options.out_path:
-        # Input of a directory, expand directory, and output to json
-        print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (options.in_directory, options.out_path)
+    elif args.in_directory and args.out_path:
+        # Input directory, expand directory and output to json
+        print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
 
-        for root, dirs, files in os.walk(os.path.abspath(options.in_directory)):
-            for file in files:
-                if file.endswith(".pdf"):
+        # Should we be checking for this too?
+        # An invalid dir or non-existent dir will crash the app
+        # if os.path.exists(args.in_directory):
+        #     if not os.path.isdir(args.in_directory):
+        #         print "error: input %s is not a valid directory" % args.in_directory)
+        # else:
+        #     print "error: input directory %s does not exist" % args.in_directory)
+
+        for root, dirs, files in os.walk(os.path.abspath(args.in_directory)):
+            # `file` in Python denotes a file like object.
+            # change this to f" to avoid confusion?
+            for f in files:
+                if f.endswith(".pdf"):
                     try:
                         print "- Analyzing File: %s" % (file)
-                        out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
+                        out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
                         out_file.write(json.dumps(generate_json(
@@ -339,26 +360,21 @@ def main():
                             file_metadata(os.path.join(root, file)),
                             'green'), indent=4))
                         out_file.close()
-                    except IOError as e:
-                        with open("error.txt", "a") as error:
-                            error.write("{} - IOError {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
 
-    elif options.in_text and options.out_path:
+                    except IOError as e:
+                        current_ts = time.strftime("%Y-%m-%d %H:%M")
+                        with open("error.txt", "a+") as error:
+                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, f), e))
+
+    elif args.in_text and args.out_path:
         # Input of a textfile and output to json
-        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
 
     else:
         print "That set of options won't get you what you need.\n"
-        parser.print_help()
+        argparse.ArgumentParser.print_help
 
     return True
-
-
-# def test_main():
-#     url = "http://contagiodump.blogspot.com/2014/07/cz-solution-ltd-signed-samples-of.html"
-#     print "Trying to Text Extract %s" % url
-#     print generate_json(www_text_extractor(url), {'source', url})
-
 
 if __name__ == "__main__":
     try:
