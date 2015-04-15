@@ -352,7 +352,7 @@ def main():
                 if f.endswith(".pdf"):
                     try:
                         print "- Analyzing File: %s" % (file)
-                        out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
+                        out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
                         out_file.write(json.dumps(generate_json(
@@ -366,22 +366,15 @@ def main():
                         with open("error.txt", "a+") as error:
                             error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, f), e))
 
-    elif options.in_text and options.out_path:
+    elif args.in_text and args.out_path:
         # Input of a textfile and output to json
-        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
 
     else:
         print "That set of options won't get you what you need.\n"
         argparse.ArgumentParser.print_help
 
     return True
-
-
-# def test_main():
-#     url = "http://contagiodump.blogspot.com/2014/07/cz-solution-ltd-signed-samples-of.html"
-#     print "Trying to Text Extract %s" % url
-#     print generate_json(www_text_extractor(url), {'source', url})
-
 
 if __name__ == "__main__":
     try:
