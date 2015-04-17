@@ -17,7 +17,7 @@ import time
 
 import magic
 import requests
-import utilitybelt as util
+from utilitybelt import utilitybelt as util
 from parsers.pdf import JagerPDF
 
 '''
