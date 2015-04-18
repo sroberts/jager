@@ -10,7 +10,6 @@ setup(
     install_requires=['aspy.yaml==0.2.1',
                       'beautifulsoup4==4.3.2',
                       'cached-property==1.0.0',
-                      'GeoIP==1.3.2',
                       'jsonschema==2.4.0',
                       'netaddr==0.7.12',
                       'nodeenv==0.12.3',
