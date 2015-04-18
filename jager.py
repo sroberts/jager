@@ -117,6 +117,9 @@ def extract_ips(t):
 
     ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
+    for each in ips:
+        if util.is_reserved(each):
+            ips.remove(each)
     ips.sort()
 
     print " - %d IPv4 addresses detected." % len(ips)
