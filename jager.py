@@ -8,6 +8,7 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -15,10 +16,11 @@ import re
 import sys
 import time
 
+import BeautifulSoup4 as bs4
 import magic
 import requests
-from utilitybelt import utilitybelt as util
 from parsers.pdf import JagerPDF
+from utilitybelt import utilitybelt as util
 
 '''
 # Setup Logging
@@ -56,38 +58,6 @@ logger.critical('critical message')
 VERBOSE = False
 
 # Text Extractors:
-
-
-def pdf_text_extractor(path):
-    '''http://stackoverflow.com/questions/5725278/python-help-using-pdfminer-as-a-library'''
-
-    print "- Extracting: PDF Text - %s" % (path.split("/")[-1])
-
-    try:
-        rsrcmgr = PDFResourceManager()
-        retstr = StringIO()
-        codec = 'utf-8'
-        laparams = LAParams()
-        device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
-        fp = file(path, 'rb')
-        interpreter = PDFPageInterpreter(rsrcmgr, device)
-        password = ""
-        maxpages = 0
-        caching = True
-        pagenos = set()
-        for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password, caching=caching, check_extractable=True):
-            interpreter.process_page(page)
-        fp.close()
-        device.close()
-        str = retstr.getvalue()
-        retstr.close()
-
-        print "- Text Extracted"
-
-        return str
-
-    except:
-        raise
 
 
 def www_text_extractor(target):
