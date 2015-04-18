@@ -16,6 +16,7 @@ setup(
                       'ordereddict==1.1',
                       'pdfminer==20140328',
                       'pre-commit==0.3.6',
+                      'pygeoip==0.3.2',
                       'python-magic==0.4.6',
                       'PyYAML==3.11',
                       'requests==2.4.1',
