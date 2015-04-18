@@ -1,3 +1,4 @@
 #! /bin/sh
 pre-commit run --all-files
-nosetests
+cp -r utilitybelt/data/ .
+py.test tests/
