@@ -1,5 +1,3 @@
-import sys
-import os
 import unittest
 
 import utilitybelt as ub
@@ -10,7 +8,7 @@ class TestUB(unittest.TestCase):
     def setUp(self):
         pass
 
-    ## isA Tests
+    # isA Tests
     def test_is_IPv4Address(self):
         self.assertIsInstance(ub.is_IPv4Address("8.8.4.4"), bool)
         self.assertTrue(ub.is_IPv4Address("8.8.4.4"))
@@ -18,11 +16,11 @@ class TestUB(unittest.TestCase):
         self.assertFalse(ub.is_IPv4Address("8.8.4"))
         self.assertFalse(ub.is_IPv4Address("google.com"))
 
-    ## Geolocation Tests
+    # Geolocation Tests
     def test_ip_to_geo(self):
         self.assertIsInstance(ub.ip_to_geo("192.30.252.130"), dict)
         self.assertEqual(ub.ip_to_geo("192.30.252.130")["city"], 'San Francisco')
-        self.assertEqual(ub.ip_to_geo("192.30.252.130")["region_name"], 'California')
+        self.assertEqual(ub.ip_to_geo("192.30.252.130")["region_code"], 'CA')
         self.assertEqual(ub.ip_to_geo("192.30.252.130")["country_name"], 'United States')
 
     def test_domain_to_geo(self):
@@ -34,7 +32,7 @@ class TestUB(unittest.TestCase):
     def test_ips_to_geojson(self):
         self.assertIsInstance(ub.ips_to_geojson(["192.30.252.130", "74.125.236.169"]), dict)
 
-    ## Reverse DNS Tests
+    # Reverse DNS Tests
     def test_reverse_dns(self):
         self.assertIsInstance(ub.reverse_dns("192.30.252.130"), list)
         self.assertEqual(ub.reverse_dns("192.30.252.130"), ['github.com'])
@@ -43,11 +41,11 @@ class TestUB(unittest.TestCase):
         self.assertNotEqual(ub.reverse_dns("192.30.252.130"), [])
 
     def test_reverse_dns_sna(self):
-        self.assertIsInstance(ub.reverse_dns("192.30.252.130"), list)
-        self.assertEqual(ub.reverse_dns("192.30.252.130"), ['github.com'])
-        self.assertNotEqual(ub.reverse_dns("192.30.252.130"), ['google.com'])
-        self.assertNotEqual(ub.reverse_dns("192.30.252.130"), 'github.com')
-        self.assertNotEqual(ub.reverse_dns("192.30.252.130"), [])
+        self.assertIsInstance(ub.reverse_dns_sna("192.30.252.130"), list)
+        self.assertEqual(ub.reverse_dns_sna("192.30.252.130"), ['github.com'])
+        self.assertNotEqual(ub.reverse_dns_sna("192.30.252.130"), ['google.com'])
+        self.assertNotEqual(ub.reverse_dns_sna("192.30.252.130"), 'github.com')
+        self.assertNotEqual(ub.reverse_dns_sna("192.30.252.130"), [])
 
     def test_ip_to_long(self):
         self.assertIsInstance(ub.ip_to_long("192.30.252.130"), int)
@@ -72,6 +70,8 @@ class TestUB(unittest.TestCase):
         self.assertTrue(ub.is_reserved("10.100.100.100"))
         self.assertTrue(ub.is_reserved("100.90.200.200"))
         self.assertTrue(ub.is_reserved("127.50.50.1"))
+        self.assertTrue(ub.is_reserved("169.254.13.37"))
+        self.assertTrue(ub.is_reserved("172.16.10.10"))
         self.assertTrue(ub.is_reserved("192.0.0.50"))
         self.assertTrue(ub.is_reserved("192.0.2.50"))
         self.assertTrue(ub.is_reserved("192.88.99.50"))

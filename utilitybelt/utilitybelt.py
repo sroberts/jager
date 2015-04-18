@@ -8,17 +8,17 @@
                       __/ |
                      |___/
 
-A library to make you a Python CND Ba   tman
+A library to make you a Python CND Batman
 """
 
-import GeoIP
-import requests
-import json
 import re
 import socket
 import struct
 
-gi = GeoIP.open("data/GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
+import pygeoip
+import requests
+
+gi = pygeoip.GeoIP("data/GeoLiteCity.dat", pygeoip.MEMORY_CACHE)
 
 # Indicators
 re_ipv4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", re.I | re.S | re.M)
@@ -40,9 +40,6 @@ re_exe = '\W([\w-]+\.)(exe|dll|jar)'
 re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
 re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
 re_flash = '\W([\w-]+\.)(flv|swf)'
-
-
-gi = GeoIP.open("./data/GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
 
 
 def ip_to_long(ip):
@@ -201,7 +198,6 @@ def reverse_dns_sna(ipaddress):
         return names
     else:
         raise Exception("No PTR record for %s" % ipaddress)
-        return ""
 
 
 def reverse_dns(ipaddress):
