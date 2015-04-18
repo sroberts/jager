@@ -8,6 +8,7 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -15,9 +16,11 @@ import re
 import sys
 import time
 
+import bs4
 import magic
 import requests
 from parsers.pdf import JagerPDF
+from utilitybelt import utilitybelt as util
 
 '''
 # Setup Logging
@@ -47,37 +50,24 @@ logger.error('error message')
 logger.critical('critical message')
 '''
 
-# Indicators
-re_ipv4 = re.compile("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)", re.I | re.S | re.M)
-re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I | re.S | re.M)
-re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|\
-cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum\
-|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
-re_cve = re.compile("(CVE-(19|20)\\d{2}-\\d{4,7})", re.I | re.S | re.M)
-re_url = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)\
-(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)\
-|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
-
-# Hashes
-re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I | re.S | re.M)
-re_sha1 = re.compile("\\b[a-f0-9]{40}\\b", re.I | re.S | re.M)
-re_sha256 = re.compile("\\b[a-f0-9]{64}\\b", re.I | re.S | re.M)
-re_sha512 = re.compile("\\b[a-f0-9]{128}\\b", re.I | re.S | re.M)
-re_ssdeep = re.compile("\\b\\d{2}:[A-Za-z0-9/+]{3,}:[A-Za-z0-9/+]{3,}\\b", re.I | re.S | re.M)
-
-# File Types
-re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
-re_web = '\W([\w-]+\.)(html|php|js)'
-re_exe = '\W([\w-]+\.)(exe|dll|jar)'
-re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
-re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
-re_flash = '\W([\w-]+\.)(flv|swf)'
+# Setup File Magic
+# m = magic.open(magic.MAGIC_MIME)
+# m.load()
 
 # Switches
 VERBOSE = False
 
-# Meta Data
+# Text Extractors:
 
+
+def www_text_extractor(target):
+    response = requests.get(target)
+    soup = bs4.BeautifulSoup(response.text)
+    [s.extract() for s in soup('script')]
+    return soup.body.get_text()
+
+
+# Meta Data
 
 def file_metadata(path, tlp='green'):
     print "- Extracting: Source File Metadata"
@@ -96,11 +86,11 @@ def file_metadata(path, tlp='green'):
 def extract_hashes(t):
     print "- Extracting: Hashes"
 
-    md5s = list(set(re.findall(re_md5, t)))
-    sha1s = list(set(re.findall(re_sha1, t)))
-    sha256s = list(set(re.findall(re_sha256, t)))
-    sha512s = list(set(re.findall(re_sha512, t)))
-    ssdeeps = list(set(re.findall(re_ssdeep, t)))
+    md5s = list(set(re.findall(util.re_md5, t)))
+    sha1s = list(set(re.findall(util.re_sha1, t)))
+    sha256s = list(set(re.findall(util.re_sha256, t)))
+    sha512s = list(set(re.findall(util.re_sha512, t)))
+    ssdeeps = list(set(re.findall(util.re_ssdeep, t)))
 
     print " - %s MD5s detected." % len(md5s)
     print " - %s SHA1s detected." % len(sha1s)
@@ -114,7 +104,7 @@ def extract_hashes(t):
 def extract_emails(t):
     print "- Extracting: Email Addresses"
 
-    emails = list(set(re.findall(re_email, t)))
+    emails = list(set(re.findall(util.re_email, t)))
     emails.sort()
 
     print " - %d email addresses detected." % (len(emails))
@@ -125,8 +115,11 @@ def extract_emails(t):
 def extract_ips(t):
     print "- Extracting: IPv4 Addresses"
 
-    ips = re.findall(re_ipv4, t)
+    ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
+    for each in ips:
+        if util.is_reserved(each):
+            ips.remove(each)
     ips.sort()
 
     print " - %d IPv4 addresses detected." % len(ips)
@@ -137,7 +130,7 @@ def extract_ips(t):
 def extract_cves(t):
     print "- Extracting: CVE Identifiers"
 
-    cves = re.findall(re_cve, t)
+    cves = re.findall(util.re_cve, t)
     cves = list(set(cves))
 
     cves = [cve[0] for cve in cves]
@@ -155,8 +148,8 @@ def extract_domains(t):
     t = t.split("\n")
 
     for line in t:
-        hit = re.search(re_domain, line)
-        if re.search(re_domain, line):
+        hit = re.search(util.re_domain, line)
+        if re.search(util.re_domain, line):
             domains.append(hit.group().lower())
 
     domains = list(set(domains))
@@ -169,7 +162,7 @@ def extract_domains(t):
 
 def extract_urls(t):
     print "- Extracting: URLs"
-    urls = re.findall(re_url, t)
+    urls = re.findall(util.re_url, t)
     # eliminate repeats
     urls = list(set(urls))
     filter(None, urls)
@@ -183,12 +176,12 @@ def extract_urls(t):
 def extract_filenames(t):
     print "- Extracting: File Names"
 
-    docs = list(set(["".join(doc) for doc in re.findall(re_doc, t)]))
-    exes = list(set(["".join(item) for item in re.findall(re_exe, t)]))
-    webs = list(set(["".join(item) for item in re.findall(re_web, t)]))
-    zips = list(set(["".join(item) for item in re.findall(re_zip, t)]))
-    imgs = list(set(["".join(item) for item in re.findall(re_img, t)]))
-    flashes = list(set(["".join(item) for item in re.findall(re_flash, t)]))
+    docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
+    exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
+    webs = list(set(["".join(item) for item in re.findall(util.re_web, t)]))
+    zips = list(set(["".join(item) for item in re.findall(util.re_zip, t)]))
+    imgs = list(set(["".join(item) for item in re.findall(util.re_img, t)]))
+    flashes = list(set(["".join(item) for item in re.findall(util.re_flash, t)]))
 
     docs.sort()
     exes.sort()
