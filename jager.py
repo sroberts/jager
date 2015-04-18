@@ -16,7 +16,7 @@ import re
 import sys
 import time
 
-import BeautifulSoup4 as bs4
+import bs4
 import magic
 import requests
 from parsers.pdf import JagerPDF
