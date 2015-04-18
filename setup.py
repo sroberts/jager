@@ -20,6 +20,8 @@ setup(
                       'PyYAML==3.11',
                       'requests==2.4.1',
                       'simplejson==3.6.5',
+                      'pytest>=2.7.0',
+                      'pytest-cov>=1.8.1'
                       ],
     package_dir={'jager': 'src'},
     packages=['jager']
