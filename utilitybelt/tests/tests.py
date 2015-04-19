@@ -16,6 +16,11 @@ class TestUB(unittest.TestCase):
         self.assertFalse(ub.is_IPv4Address("8.8.4"))
         self.assertFalse(ub.is_IPv4Address("google.com"))
 
+    def test_is_url(self):
+        self.assertIsInstance(ub.is_url("http://example.com"), bool)
+        self.assertTrue(ub.is_url("http://example.com"))
+        self.assertFalse(ub.is_url("example.com"))
+
     # Geolocation Tests
     def test_ip_to_geo(self):
         self.assertIsInstance(ub.ip_to_geo("192.30.252.130"), dict)
