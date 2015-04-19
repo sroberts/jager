@@ -8,13 +8,13 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 import argparse
-import datetime
 import hashlib
 import json
 import os
 import re
 import sys
 import time
+from datetime import datetime
 
 import bs4
 import magic
