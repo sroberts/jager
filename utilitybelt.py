@@ -25,6 +25,7 @@ re_ipv4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", re.I | re.S | re.M)
 re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I | re.S | re.M)
 re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
 re_cve = re.compile("(CVE-(19|20)\\d{2}-\\d{4,7})", re.I | re.S | re.M)
+re_url = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+", re.I | re.S | re.M)
 
 # Hashes
 re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I | re.S | re.M)
@@ -112,6 +113,12 @@ def is_IPv4Address(ipv4address):
     """Returns true for valid IPv4 Addresses, false for invalid."""
 
     return bool(re.match(re_ipv4, ipv4address))
+
+
+def is_url(url):
+    """Returns true for valid URLs, false for invalid."""
+
+    return bool(re.match(re_url, url))
 
 
 def ip_to_geo(ipaddress):
