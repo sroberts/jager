@@ -365,7 +365,7 @@ def main():
 
     else:
         print "That set of options won't get you what you need.\n"
-        argparse.ArgumentParser.print_help
+        parser.print_help()
 
     return True
 
