@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 """
 www.py
 
@@ -35,7 +35,8 @@ class JagerWWW:
             return str(self.text)
         except UnicodeEncodeError:
             print "Unicode is a pain..."
-            raise
+            return self.text.encode('utf-8').strip()
+            # raise
 
 
 def main():
