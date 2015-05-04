@@ -10,7 +10,7 @@ A module for Jager to extract plain text from websites.
 """
 
 import sys
-import haslib
+import hashlib
 
 import requests
 from bs4 import BeautifulSoup

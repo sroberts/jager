@@ -291,22 +291,19 @@ def main():
         out_file = open(os.path.abspath(options.out_path), 'w')
         in_file = os.path.abspath(options.in_pdf)
 
-        pdf_text = str(JagerPDF(in_file))
-        out_json = json.dumps(generate_json(pdf_text, metadata), indent=4)
+        parser = JagerPDF(in_file)
+        out_json = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
 
         out_file.write(out_json)
         out_file.close()
 
     elif options.in_url and options.out_path:
         # Input of a website out to JSON
-        print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, options.out_path)
-
         in_www = options.in_url
         out_file = open(os.path.abspath(options.out_path), 'w')
-        metadata = {}
 
-        www_text = str(JagerWWW(in_www))
-        out_json = json.dumps(generate_json(www_text, metadata), indent=4)
+        parser = JagerWWW(in_www)
+        out_json = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
 
         out_file.write(out_json)
         out_file.close()
