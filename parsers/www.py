@@ -15,11 +15,14 @@ import haslib
 import requests
 from bs4 import BeautifulSoup
 
+headers = {
+    'User-Agent': 'curl/7.21.4 (universal-apple-darwin11.0) libcurl/7.21.4 OpenSSL/0.9.8r zlib/1.2.5',
+}
+
 
 class JagerWWW:
 
     text = ""
-    headers = { 'User-Agent': 'curl/7.17.1 (x86_64-pc-linux-gnu) libcurl/7.17.1 OpenSSL/0.9.8g zlib/1.2.3' }
 
     useragent = ""
 
@@ -29,7 +32,7 @@ class JagerWWW:
         self.text = self.extractor(website)
 
     def extractor(self, website):
-        html = requests.get(website, verify=False)
+        html = requests.get(website, headers=headers, verify=False)
         soup = BeautifulSoup(html.text, "html.parser")
 
         return soup.get_text()

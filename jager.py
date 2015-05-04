@@ -15,8 +15,8 @@ import time
 from optparse import OptionParser
 
 import magic
-import requests
 from parsers.pdf import JagerPDF
+from parsers.www import JagerWWW
 
 '''
 # Setup Logging
@@ -291,19 +291,25 @@ def main():
         out_file = open(os.path.abspath(options.out_path), 'w')
         in_file = os.path.abspath(options.in_pdf)
 
-        parser = JagerPDF(in_file)
-        outjson = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
+        pdf_text = str(JagerPDF(in_file))
+        out_json = json.dumps(generate_json(pdf_text, metadata), indent=4)
 
-        out_file.write(outjson)
+        out_file.write(out_json)
         out_file.close()
 
     elif options.in_url and options.out_path:
         # Input of a website out to JSON
         print "WIP: You're trying to analyze: %s and output to %s" % (options.in_url, options.out_path)
 
-        r = requests.get(options.in_url)
+        in_www = options.in_url
+        out_file = open(os.path.abspath(options.out_path), 'w')
+        metadata = {}
 
-        return r
+        www_text = str(JagerWWW(in_www))
+        out_json = json.dumps(generate_json(www_text, metadata), indent=4)
+
+        out_file.write(out_json)
+        out_file.close()
 
     elif options.in_directory and options.out_path:
         # Input of a directory, expand directory, and output to json
