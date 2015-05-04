@@ -75,22 +75,6 @@ re_flash = '\W([\w-]+\.)(flv|swf)'
 # Switches
 VERBOSE = False
 
-# Meta Data
-
-
-def file_metadata(path, tlp='green'):
-    print "- Extracting: Source File Metadata"
-
-    hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
-    filesize = os.path.getsize(path)
-    filename = path.split('/')[-1]
-    filetype = magic.from_file(path)
-
-    print "- Metadata Generated"
-
-    return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
-
-
 # Data Extractors
 def extract_hashes(t):
     print "- Extracting: Hashes"
@@ -306,10 +290,9 @@ def main():
         # Input of a PDF out to JSON
         out_file = open(os.path.abspath(options.out_path), 'w')
         in_file = os.path.abspath(options.in_pdf)
-        metadata = file_metadata(in_file)
 
-        pdftext = str(JagerPDF(in_file))
-        outjson = json.dumps(generate_json(pdftext, metadata), indent=4)
+        parser = JagerPDF(in_file)
+        outjson = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
 
         out_file.write(outjson)
         out_file.close()

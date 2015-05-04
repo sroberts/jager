@@ -10,6 +10,7 @@ A module for Jager to extract plain text from websites.
 """
 
 import sys
+import haslib
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,10 +18,14 @@ from bs4 import BeautifulSoup
 
 class JagerWWW:
 
-    # regex = "" # WIP: Check to ensure submitted value is a http link
     text = ""
+    headers = { 'User-Agent': 'curl/7.17.1 (x86_64-pc-linux-gnu) libcurl/7.17.1 OpenSSL/0.9.8g zlib/1.2.3' }
+
+    useragent = ""
 
     def __init__(self, website):
+
+        self.path = website
         self.text = self.extractor(website)
 
     def extractor(self, website):
@@ -28,6 +33,16 @@ class JagerWWW:
         soup = BeautifulSoup(html.text, "html.parser")
 
         return soup.get_text()
+
+    def metadata(self, tlp='green'):
+        print "- Extracting: Webpage Metadata"
+
+        hash_sha1 = hashlib.sha1(self.text).hexdigest()
+        length = len(self.text)
+
+        print "- Metadata Generated"
+
+        return {"sha1": hash_sha1, "length": lenght}
 
     def __str__(self):
 
