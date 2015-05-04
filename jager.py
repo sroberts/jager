@@ -7,14 +7,12 @@ Created by Scott Roberts.
 Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
-import hashlib
 import json
 import os
 import re
 import time
 from optparse import OptionParser
 
-import magic
 from parsers.pdf import JagerPDF
 from parsers.www import JagerWWW
 
@@ -76,6 +74,8 @@ re_flash = '\W([\w-]+\.)(flv|swf)'
 VERBOSE = False
 
 # Data Extractors
+
+
 def extract_hashes(t):
     print "- Extracting: Hashes"
 
@@ -320,10 +320,9 @@ def main():
                         out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
-                        out_file.write(json.dumps(generate_json(
-                            str(JagerPDF(os.path.join(root, file))),
-                            file_metadata(os.path.join(root, file)),
-                            'green'), indent=4))
+                        parser = JagerPDF(os.path.join(root, file))
+
+                        out_file.write(json.dumps(generate_json(str(parser), parser.metadata(), 'green'), indent=4))
                         out_file.close()
                     except IOError as e:
                         with open("error.txt", "a") as error:
@@ -338,12 +337,6 @@ def main():
         parser.print_help()
 
     return True
-
-
-# def test_main():
-#     url = "http://contagiodump.blogspot.com/2014/07/cz-solution-ltd-signed-samples-of.html"
-#     print "Trying to Text Extract %s" % url
-#     print generate_json(www_text_extractor(url), {'source', url})
 
 
 if __name__ == "__main__":
