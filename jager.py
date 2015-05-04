@@ -7,14 +7,17 @@ Created by Scott Roberts.
 Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
+import argparse
 import json
 import os
 import re
+import sys
 import time
-from optparse import OptionParser
+from datetime import datetime
 
 from parsers.pdf import JagerPDF
 from parsers.www import JagerWWW
+from utilitybelt import utilitybelt as util
 
 '''
 # Setup Logging
@@ -44,31 +47,9 @@ logger.error('error message')
 logger.critical('critical message')
 '''
 
-# Indicators
-re_ipv4 = re.compile("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)", re.I | re.S | re.M)
-re_email = re.compile("\\b[A-Za-z0-9_.]+@[0-9a-z.-]+\\b", re.I | re.S | re.M)
-re_domain = re.compile("([a-z0-9-_]+\\.){1,4}(com|aero|am|asia|au|az|biz|br|ca|\
-cat|cc|ch|co|coop|cx|de|edu|fr|gov|hk|info|int|ir|jobs|jp|kr|kz|me|mil|mobi|museum\
-|name|net|nl|nr|org|post|pre|ru|tel|tk|travel|tw|ua|uk|uz|ws|xxx)", re.I | re.S | re.M)
-re_cve = re.compile("(CVE-(19|20)\\d{2}-\\d{4,7})", re.I | re.S | re.M)
-re_url = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)\
-(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)\
-|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
-
-# Hashes
-re_md5 = re.compile("\\b[a-f0-9]{32}\\b", re.I | re.S | re.M)
-re_sha1 = re.compile("\\b[a-f0-9]{40}\\b", re.I | re.S | re.M)
-re_sha256 = re.compile("\\b[a-f0-9]{64}\\b", re.I | re.S | re.M)
-re_sha512 = re.compile("\\b[a-f0-9]{128}\\b", re.I | re.S | re.M)
-re_ssdeep = re.compile("\\b\\d{2}:[A-Za-z0-9/+]{3,}:[A-Za-z0-9/+]{3,}\\b", re.I | re.S | re.M)
-
-# File Types
-re_doc = '\W([\w-]+\.)(docx|doc|csv|pdf|xlsx|xls|rtf|txt|pptx|ppt)'
-re_web = '\W([\w-]+\.)(html|php|js)'
-re_exe = '\W([\w-]+\.)(exe|dll|jar)'
-re_zip = '\W([\w-]+\.)(zip|zipx|7z|rar|tar|gz)'
-re_img = '\W([\w-]+\.)(jpeg|jpg|gif|png|tiff|bmp)'
-re_flash = '\W([\w-]+\.)(flv|swf)'
+# Setup File Magic
+# m = magic.open(magic.MAGIC_MIME)
+# m.load()
 
 # Switches
 VERBOSE = False
@@ -79,11 +60,11 @@ VERBOSE = False
 def extract_hashes(t):
     print "- Extracting: Hashes"
 
-    md5s = list(set(re.findall(re_md5, t)))
-    sha1s = list(set(re.findall(re_sha1, t)))
-    sha256s = list(set(re.findall(re_sha256, t)))
-    sha512s = list(set(re.findall(re_sha512, t)))
-    ssdeeps = list(set(re.findall(re_ssdeep, t)))
+    md5s = list(set(re.findall(util.re_md5, t)))
+    sha1s = list(set(re.findall(util.re_sha1, t)))
+    sha256s = list(set(re.findall(util.re_sha256, t)))
+    sha512s = list(set(re.findall(util.re_sha512, t)))
+    ssdeeps = list(set(re.findall(util.re_ssdeep, t)))
 
     print " - %s MD5s detected." % len(md5s)
     print " - %s SHA1s detected." % len(sha1s)
@@ -97,7 +78,7 @@ def extract_hashes(t):
 def extract_emails(t):
     print "- Extracting: Email Addresses"
 
-    emails = list(set(re.findall(re_email, t)))
+    emails = list(set(re.findall(util.re_email, t)))
     emails.sort()
 
     print " - %d email addresses detected." % (len(emails))
@@ -108,8 +89,11 @@ def extract_emails(t):
 def extract_ips(t):
     print "- Extracting: IPv4 Addresses"
 
-    ips = re.findall(re_ipv4, t)
+    ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
+    for each in ips:
+        if util.is_reserved(each):
+            ips.remove(each)
     ips.sort()
 
     print " - %d IPv4 addresses detected." % len(ips)
@@ -120,7 +104,7 @@ def extract_ips(t):
 def extract_cves(t):
     print "- Extracting: CVE Identifiers"
 
-    cves = re.findall(re_cve, t)
+    cves = re.findall(util.re_cve, t)
     cves = list(set(cves))
 
     cves = [cve[0] for cve in cves]
@@ -138,8 +122,8 @@ def extract_domains(t):
     t = t.split("\n")
 
     for line in t:
-        hit = re.search(re_domain, line)
-        if re.search(re_domain, line):
+        hit = re.search(util.re_domain, line)
+        if re.search(util.re_domain, line):
             domains.append(hit.group().lower())
 
     domains = list(set(domains))
@@ -152,7 +136,7 @@ def extract_domains(t):
 
 def extract_urls(t):
     print "- Extracting: URLs"
-    urls = re.findall(re_url, t)
+    urls = re.findall(util.re_url, t)
     # eliminate repeats
     urls = list(set(urls))
     filter(None, urls)
@@ -166,12 +150,12 @@ def extract_urls(t):
 def extract_filenames(t):
     print "- Extracting: File Names"
 
-    docs = list(set(["".join(doc) for doc in re.findall(re_doc, t)]))
-    exes = list(set(["".join(item) for item in re.findall(re_exe, t)]))
-    webs = list(set(["".join(item) for item in re.findall(re_web, t)]))
-    zips = list(set(["".join(item) for item in re.findall(re_zip, t)]))
-    imgs = list(set(["".join(item) for item in re.findall(re_img, t)]))
-    flashes = list(set(["".join(item) for item in re.findall(re_flash, t)]))
+    docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
+    exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
+    webs = list(set(["".join(item) for item in re.findall(util.re_web, t)]))
+    zips = list(set(["".join(item) for item in re.findall(util.re_zip, t)]))
+    imgs = list(set(["".join(item) for item in re.findall(util.re_img, t)]))
+    flashes = list(set(["".join(item) for item in re.findall(util.re_flash, t)]))
 
     docs.sort()
     exes.sort()
@@ -227,6 +211,12 @@ def generate_json(text, metadata, tlp='red'):
     return group_json
 
 
+def get_time():
+    now = datetime.isoformat(datetime.now())
+    now = now.replace(':', '_').split('.')[0]
+    return now
+
+
 def title():
     ascii_art = """
    __
@@ -245,51 +235,32 @@ def main():
     '''Where the initial work happens...'''
     title()
 
-    parser = OptionParser(usage="usage: %prog [options] input (-p, -d, -u, -t)\
-    arguement -o/--out filename")
-    parser.add_option("-p", "--pdf",
-                      action="store",
-                      type="string",
-                      dest="in_pdf",
-                      default=None,
-                      help="Specify an input.")
-    parser.add_option("-o", "--out",
-                      action="store",
-                      type="string",
-                      dest="out_path",
-                      default="output.json",
-                      help="Specify an output.")
-    parser.add_option("-d", "--directory",
-                      action="store",
-                      type="string",
-                      dest="in_directory",
-                      default=None,
-                      help="WIP: Specify a directory to analyze.")
-    parser.add_option("-u", "--url",
-                      action="store",
-                      type="string",
-                      dest="in_url",
-                      default=None,
-                      help="WIP: Analyze webpage.")
-    parser.add_option("-t", "--text",
-                      action="store",
-                      type="string",
-                      dest="in_text",
-                      default=None,
-                      help="NOT IMPLIMENTED: Analyze textfile.")
-    # parser.add_option("-v", "--verbose",
-    #                   action="store",
-    #                   type="string",
-    #                   dest="verbose",
-    #                   default=True,
-    #                   help="Prints lots of status messages.")
+    parser = argparse.ArgumentParser(prog=sys.argv[0])
 
-    (options, args) = parser.parse_args()
+    parser.add_argument("-p", "--pdf", help="Specify an input.", action="store",
+                        default=None, type=str, dest="in_pdf", required=False)
 
-    if options.in_pdf and options.out_path:
+    parser.add_argument("-o", "--output", help="Specify an output.", action="store",
+                        default="output.json", type=str, dest="out_path", required=False)
+
+    parser.add_argument("-d", "--directory", help="WIP: Specify a directory to analyze.",
+                        action="store", default=None, type=str, dest="in_directory", required=False)
+
+    parser.add_argument("-u", "--url", help="WIP: Analyze webpage.", action="store",
+                        default=None, type=str, dest="in_url", required=False)
+
+    parser.add_argument("-t", "--text", help="NOT IMPLIMENTED: Analyze text file.",
+                        action="store", default=None, type=str, dest="in_text", required=False)
+
+    parser.add_argument("-v", "--verbose", help="Prints lots of status messages.",
+                        action="store_true", dest="verbose", default=True, required=False)
+
+    args = parser.parse_args()
+
+    if args.in_pdf and args.out_path:
         # Input of a PDF out to JSON
-        out_file = open(os.path.abspath(options.out_path), 'w')
-        in_file = os.path.abspath(options.in_pdf)
+        out_file = open(os.path.abspath(args.out_path), 'w')
+        in_file = os.path.abspath(args.in_pdf)
 
         parser = JagerPDF(in_file)
         out_json = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
@@ -297,10 +268,10 @@ def main():
         out_file.write(out_json)
         out_file.close()
 
-    elif options.in_url and options.out_path:
+    elif args.in_url and args.out_path:
         # Input of a website out to JSON
-        in_www = options.in_url
-        out_file = open(os.path.abspath(options.out_path), 'w')
+        in_www = args.in_url
+        out_file = open(os.path.abspath(args.out_path), 'w')
 
         parser = JagerWWW(in_www)
         out_json = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
@@ -308,36 +279,37 @@ def main():
         out_file.write(out_json)
         out_file.close()
 
-    elif options.in_directory and options.out_path:
+    elif args.in_directory and args.out_path:
         # Input of a directory, expand directory, and output to json
-        print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (options.in_directory, options.out_path)
+        print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
 
-        for root, dirs, files in os.walk(os.path.abspath(options.in_directory)):
+        for root, dirs, files in os.walk(os.path.abspath(args.in_directory)):
             for file in files:
                 if file.endswith(".pdf"):
                     try:
                         print "- Analyzing File: %s" % (file)
-                        out_filename = "%s/%s.json" % (options.out_path, file.split('/')[-1].split(".")[0])
+                        out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
                         parser = JagerPDF(os.path.join(root, file))
 
                         out_file.write(json.dumps(generate_json(str(parser), parser.metadata(), 'green'), indent=4))
                         out_file.close()
-                    except IOError as e:
-                        with open("error.txt", "a") as error:
-                            error.write("{} - IOError {}\n".format(time.strftime("%Y-%m-%d %H:%M"), os.path.join(root, file), e))
 
-    elif options.in_text and options.out_path:
+                    except IOError as e:
+                        current_ts = time.strftime("%Y-%m-%d %H:%M")
+                        with open("error.txt", "a+") as error:
+                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, file), e))
+
+    elif args.in_text and args.out_path:
         # Input of a textfile and output to json
-        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (options.in_text, options.out_path)
+        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
 
     else:
-        print "That set of options won't get you what you need.\n"
+        print "That set of args won't get you what you need.\n"
         parser.print_help()
 
     return True
-
 
 if __name__ == "__main__":
     try:
