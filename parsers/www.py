@@ -29,7 +29,7 @@ class JagerWWW:
     def __init__(self, website):
 
         self.path = website
-        self.text = self.extractor(website)
+        self.text = self.extractor(website).encode('utf-8').strip()
 
     def extractor(self, website):
         html = requests.get(website, headers=headers, verify=False)
@@ -45,16 +45,11 @@ class JagerWWW:
 
         print "- Metadata Generated"
 
-        return {"sha1": hash_sha1, "length": lenght}
+        return {"sha1": hash_sha1, "length": length}
 
     def __str__(self):
 
-        try:
-            return str(self.text)
-        except UnicodeEncodeError:
-            print "Unicode is a pain..."
-            return self.text.encode('utf-8').strip()
-            # raise
+        return str(self.text)
 
 
 def main():
