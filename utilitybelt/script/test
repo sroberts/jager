@@ -1,9 +1,0 @@
-#!/bin/sh
-
-
-source venv/bin/activate
-
-echo "Executing test suite: "
-python tests/tests.py
-
-deactivate

@@ -1,3 +1,4 @@
 test:
   override:
+    - cd data && ./update_maxmind.sh
     - ./scripts/test.sh

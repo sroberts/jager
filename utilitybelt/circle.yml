@@ -1,4 +1,0 @@
-test:
-  override:
-    - py.test --cov utilitybelt tests/tests.py
-    - coveralls
