@@ -36,7 +36,7 @@ nosetests.xml
 .pydevproject
 
 # virtualenv
-venv
+venv*
 
 # IDE config
 .idea
@@ -50,5 +50,7 @@ venv
 .ipynb_checkpoints
 
 error.txt
+data/Geo*
+
 # Default output
 output.json
