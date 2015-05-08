@@ -23,6 +23,7 @@ setup(
                       'simplejson==3.6.5',
                       'pytest>=2.7.0',
                       'pytest-cov>=1.8.1'
+                      'cnd-utilitybelt'
                       ],
     package_dir={'jager': 'src'},
     packages=['jager']
