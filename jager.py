@@ -8,7 +8,6 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -16,10 +15,8 @@ import sys
 import time
 from datetime import datetime
 
-import bs4
-import magic
-import requests
 from parsers.pdf import JagerPDF
+from parsers.www import JagerWWW
 from utilitybelt import utilitybelt as util
 
 '''
@@ -57,32 +54,9 @@ logger.critical('critical message')
 # Switches
 VERBOSE = False
 
-# Text Extractors:
-
-
-def www_text_extractor(target):
-    response = requests.get(target)
-    soup = bs4.BeautifulSoup(response.text)
-    [s.extract() for s in soup('script')]
-    return soup.body.get_text()
-
-
-# Meta Data
-
-def file_metadata(path, tlp='green'):
-    print "- Extracting: Source File Metadata"
-
-    hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
-    filesize = os.path.getsize(path)
-    filename = path.split('/')[-1]
-    filetype = magic.from_file(path)
-
-    print "- Metadata Generated"
-
-    return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
-
-
 # Data Extractors
+
+
 def extract_hashes(t):
     print "- Extracting: Hashes"
 
@@ -285,86 +259,60 @@ def main():
 
     if args.in_pdf and args.out_path:
         # Input of a PDF out to JSON
-        if os.path.exists(os.path.abspath(args.out_path)):
-            print 'error: output file %s all ready exists!' % args.out_path
-            out_path = '%s_%s.json' % (os.path.splitext(args.out_path)[0], get_time())
-            print 'using output file %s' % out_path
-        else:
-            out_path = args.out_path
-
-        out_file = open(os.path.abspath(out_path), 'w')
-
-        if not os.path.exists(os.path.abspath(args.in_pdf)):
-            print 'error: input PDF %s does not exist!' % args.in_pdf
-            out_file.close()
-            os.remove(os.path.abspath(out_path))
-            sys.exit(1)
+        out_file = open(os.path.abspath(args.out_path), 'w')
         in_file = os.path.abspath(args.in_pdf)
 
-        metadata = file_metadata(in_file)
+        parser = JagerPDF(in_file)
+        out_json = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
 
-        pdftext = str(JagerPDF(in_file))
-        outjson = json.dumps(generate_json(pdftext, metadata), indent=4)
-
-        out_file.write(outjson)
+        out_file.write(out_json)
         out_file.close()
 
     elif args.in_url and args.out_path:
-        # Input of a website out to JSON
-        print "WIP: You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
 
-        # Should we be verifying this is a valid URL?
-        r = requests.get(args.in_url)
-        return r
-        # You aren"t writing the JSON response here to anything, right?
-        # It just returns the requests object.
-        # should it be something like:
-        # r = requests.get(options.in_url)
-        # if r.status_code == 200:
-        #     json_out = r.json()
-        #     ....
-        #     out_file.write(json_out)
-        #     out_file.close()
+        if args.in_url.endswith('.pdf'):
+            print "It looks like that's a PDF. You should download it and use -p instead of -u.\n"
+            parser.print_help()
+            break
+
+        # Input of a website out to JSON
+        in_www = args.in_url
+        out_file = open(os.path.abspath(args.out_path), 'w')
+
+        parser = JagerWWW(in_www)
+        out_json = json.dumps(generate_json(str(parser), parser.metadata(), 'green'), indent=4)
+
+        out_file.write(out_json)
+        out_file.close()
 
     elif args.in_directory and args.out_path:
-        # Input directory, expand directory and output to json
+        # Input of a directory, expand directory, and output to json
         print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
 
-        # Should we be checking for this too?
-        # An invalid dir or non-existent dir will crash the app
-        # if os.path.exists(args.in_directory):
-        #     if not os.path.isdir(args.in_directory):
-        #         print "error: input %s is not a valid directory" % args.in_directory)
-        # else:
-        #     print "error: input directory %s does not exist" % args.in_directory)
-
         for root, dirs, files in os.walk(os.path.abspath(args.in_directory)):
-            # `file` in Python denotes a file like object.
-            # change this to f" to avoid confusion?
-            for f in files:
-                if f.endswith(".pdf"):
+            for file in files:
+                if file.endswith(".pdf"):
                     try:
                         print "- Analyzing File: %s" % (file)
                         out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
-                        out_file.write(json.dumps(generate_json(
-                            str(JagerPDF(os.path.join(root, file))),
-                            file_metadata(os.path.join(root, file)),
-                            'green'), indent=4))
+                        parser = JagerPDF(os.path.join(root, file))
+
+                        out_file.write(json.dumps(generate_json(str(parser), parser.metadata(), 'green'), indent=4))
                         out_file.close()
 
                     except IOError as e:
                         current_ts = time.strftime("%Y-%m-%d %H:%M")
                         with open("error.txt", "a+") as error:
-                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, f), e))
+                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, file), e))
 
     elif args.in_text and args.out_path:
         # Input of a textfile and output to json
         print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
 
     else:
-        print "That set of options won't get you what you need.\n"
+        print "That set of args won't get you what you need.\n"
         parser.print_help()
 
     return True
