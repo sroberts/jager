@@ -9,8 +9,8 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 A module for Jager to extract plain text from websites.
 """
 
-import sys
 import hashlib
+import sys
 
 import requests
 from bs4 import BeautifulSoup
@@ -37,7 +37,7 @@ class JagerWWW:
 
         return soup.get_text()
 
-    def metadata(self, tlp='green'):
+    def metadata(self):
         print "- Extracting: Webpage Metadata"
 
         hash_sha1 = hashlib.sha1(self.text).hexdigest()

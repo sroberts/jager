@@ -269,12 +269,18 @@ def main():
         out_file.close()
 
     elif args.in_url and args.out_path:
+
+        if args.in_url.endswith('.pdf'):
+            print "It looks like that's a PDF. You should download it and use -p instead of -u.\n"
+            parser.print_help()
+            break
+
         # Input of a website out to JSON
         in_www = args.in_url
         out_file = open(os.path.abspath(args.out_path), 'w')
 
         parser = JagerWWW(in_www)
-        out_json = json.dumps(generate_json(str(parser), parser.metadata()), indent=4)
+        out_json = json.dumps(generate_json(str(parser), parser.metadata(), 'green'), indent=4)
 
         out_file.write(out_json)
         out_file.close()

@@ -9,12 +9,12 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 A module for Jager to extract plain text from PDFs.
 """
 
+import hashlib
 import os
 import sys
-import hashlib
-import magic
 from cStringIO import StringIO
 
+import magic
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfdocument import PDFEncryptionError
@@ -73,7 +73,7 @@ class JagerPDF:
 
         return str
 
-    def metadata(self, tlp='green'):
+    def metadata(self):
         print "- Extracting: Source File Metadata"
 
         hash_sha1 = hashlib.sha1(open(self.path, 'rb').read()).hexdigest()
@@ -84,7 +84,6 @@ class JagerPDF:
         print "- Metadata Generated"
 
         return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
-
 
     def __str__(self):
         return self.text
