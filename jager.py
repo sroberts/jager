@@ -344,20 +344,20 @@ def main():
             for f in files:
                 if f.endswith(".pdf"):
                     try:
-                        print "- Analyzing File: %s" % (file)
-                        out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
+                        print "- Analyzing File: %s" % (f)
+                        out_filename = "%s/%s.json" % (args.out_path, f.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
                         out_file.write(json.dumps(generate_json(
-                            str(JagerPDF(os.path.join(root, file))),
-                            file_metadata(os.path.join(root, file)),
+                            str(JagerPDF(os.path.join(root, f))),
+                            file_metadata(os.path.join(root, f)),
                             'green'), indent=4))
                         out_file.close()
 
                     except IOError as e:
                         current_ts = time.strftime("%Y-%m-%d %H:%M")
                         with open("error.txt", "a+") as error:
-                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, f), e))
+                            error.write("%s - IOError on %s: %s\n" % (current_ts, os.path.join(root, f), e))
 
     elif args.in_text and args.out_path:
         # Input of a textfile and output to json
