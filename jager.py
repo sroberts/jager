@@ -148,8 +148,8 @@ def extract_domains(t):
     t = t.split("\n")
 
     for line in t:
-        hit = re.search(util.re_domain, line)
-        if re.search(util.re_domain, line):
+        hit = re.search(util.re_fqdn, line)
+        if hit:
             domains.append(hit.group().lower())
 
     domains = list(set(domains))
@@ -330,13 +330,18 @@ def main():
         # Input directory, expand directory and output to json
         print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
 
-        # Should we be checking for this too?
         # An invalid dir or non-existent dir will crash the app
-        # if os.path.exists(args.in_directory):
-        #     if not os.path.isdir(args.in_directory):
-        #         print "error: input %s is not a valid directory" % args.in_directory)
-        # else:
-        #     print "error: input directory %s does not exist" % args.in_directory)
+        if os.path.exists(args.in_directory):
+            if not os.path.isdir(args.in_directory):
+                print "error: input %s is not a valid directory" % args.in_directory
+                sys.exit(1)
+        else:
+            print "error: input directory %s does not exist" % args.in_directory
+            sys.exit(1)
+
+        if not os.path.exists(args.out_path) or not os.path.isdir(args.out_path):
+            print "error: output directory %s is not usable" % args.out_path
+            sys.exit(1)
 
         for root, dirs, files in os.walk(os.path.abspath(args.in_directory)):
             # `file` in Python denotes a file like object.
@@ -344,20 +349,20 @@ def main():
             for f in files:
                 if f.endswith(".pdf"):
                     try:
-                        print "- Analyzing File: %s" % (file)
-                        out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
+                        print "- Analyzing File: %s" % (f)
+                        out_filename = "%s/%s.json" % (args.out_path, f.split('/')[-1].split(".")[0])
                         out_file = open(out_filename, 'w')
 
                         out_file.write(json.dumps(generate_json(
-                            str(JagerPDF(os.path.join(root, file))),
-                            file_metadata(os.path.join(root, file)),
+                            str(JagerPDF(os.path.join(root, f))),
+                            file_metadata(os.path.join(root, f)),
                             'green'), indent=4))
                         out_file.close()
 
                     except IOError as e:
                         current_ts = time.strftime("%Y-%m-%d %H:%M")
                         with open("error.txt", "a+") as error:
-                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, f), e))
+                            error.write("%s - IOError on %s: %s\n" % (current_ts, os.path.join(root, f), e))
 
     elif args.in_text and args.out_path:
         # Input of a textfile and output to json
