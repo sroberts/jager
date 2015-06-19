@@ -148,8 +148,8 @@ def extract_domains(t):
     t = t.split("\n")
 
     for line in t:
-        hit = re.search(util.re_domain, line)
-        if re.search(util.re_domain, line):
+        hit = re.search(util.re_fqdn, line)
+        if re.search(util.re_fqdn, line):
             domains.append(hit.group().lower())
 
     domains = list(set(domains))
