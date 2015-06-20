@@ -286,8 +286,10 @@ def processURL(url):
         return False
     try:
         print "- Analyzing URL: %s" % (url)
+        # Many sites will respond with a 4xx if the UA is wget/urllib/etc
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows; U; MSIE 7.0; Windows NT 6.0; en-US)'}
         # disable cert checking (many sites dont have valid certs + speedup )
-        r = requests.get(url, verify=False)
+        r = requests.get(url, verify=False, headers=headers)
         if r.status_code == 200:
             if 'json' in r.headers['content-type']:
                 text = r.json()
@@ -303,6 +305,9 @@ def processURL(url):
             processText(text, metadata, out_filename)
             print '- Wrote output to %s'%(out_filename)
             return True
+        else:
+            print 'HTTP response : %s'%(r.status_code)
+
     except Exception as e:
         print 'Error processing URL %s : %s'%(url, e)
     return False
