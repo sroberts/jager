@@ -14,7 +14,12 @@ import os
 import re
 import sys
 import time
+import glob
+import logging
+import tempfile
+from urlparse import urlparse
 from datetime import datetime
+from multiprocessing import Pool, cpu_count
 
 import bs4
 import magic
@@ -22,33 +27,32 @@ import requests
 from parsers.pdf import JagerPDF
 from utilitybelt import utilitybelt as util
 
-'''
-# Setup Logging
-import logging
-logger = logging.getLogger('default')
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# Setup logging to file
-fh = logging.FileHandler('default.log')
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
-# Setup logging to console
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-logger.addHandler(ch)
-# Setup logging to syslog
-import logging.handlers
-sh = logging.handlers.SysLogHandler()
-sh.setLevel(logging.DEBUG)
-logger.addHandler(sh)
+# Global settings, set from command line args
+CONFIG_OUT_PATH = None
+CONFIG_OUT_FILE = None
+CONFIG_TLP      = 'GREEN'
 
-# 'application' code
-logger.debug('debug message')
-logger.info('info message')
-logger.warn('warn message')
-logger.error('error message')
-logger.critical('critical message')
-'''
+def getLogger(verbose=False):
+    logger = logging.getLogger('jager')
+    set_trace()
+    if verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    logger.setLevel(level)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # Setup logging to file
+    filename = time.strftime("%Y_%m_%d_%H_%M.log")
+    fh = logging.FileHandler('logs/%s'%(filename))
+    fh.setLevel(level)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    # Setup logging to console
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
 # Setup File Magic
 # m = magic.open(magic.MAGIC_MIME)
@@ -58,7 +62,6 @@ logger.critical('critical message')
 VERBOSE = False
 
 # Text Extractors:
-
 
 def www_text_extractor(target):
     response = requests.get(target)
@@ -70,7 +73,7 @@ def www_text_extractor(target):
 # Meta Data
 
 def file_metadata(path, tlp='green'):
-    print "- Extracting: Source File Metadata"
+    print "+ Extracting: Source File Metadata"
 
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
     filesize = os.path.getsize(path)
@@ -84,7 +87,7 @@ def file_metadata(path, tlp='green'):
 
 # Data Extractors
 def extract_hashes(t):
-    print "- Extracting: Hashes"
+    print "+ Extracting: Hashes"
 
     md5s = list(set(re.findall(util.re_md5, t)))
     sha1s = list(set(re.findall(util.re_sha1, t)))
@@ -102,7 +105,7 @@ def extract_hashes(t):
 
 
 def extract_emails(t):
-    print "- Extracting: Email Addresses"
+    print "+ Extracting: Email Addresses"
 
     emails = list(set(re.findall(util.re_email, t)))
     emails.sort()
@@ -113,7 +116,7 @@ def extract_emails(t):
 
 
 def extract_ips(t):
-    print "- Extracting: IPv4 Addresses"
+    print "+ Extracting: IPv4 Addresses"
 
     ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
@@ -128,7 +131,7 @@ def extract_ips(t):
 
 
 def extract_cves(t):
-    print "- Extracting: CVE Identifiers"
+    print "+ Extracting: CVE Identifiers"
 
     cves = re.findall(util.re_cve, t)
     cves = list(set(cves))
@@ -141,15 +144,15 @@ def extract_cves(t):
 
 
 def extract_domains(t):
-    print "- Extracting: Domains"
+    print "+ Extracting: Domains"
 
     domains = []
 
     t = t.split("\n")
 
     for line in t:
-        hit = re.search(util.re_domain, line)
-        if re.search(util.re_domain, line):
+        hit = re.search(util.re_fqdn, line)
+        if re.search(util.re_fqdn, line):
             domains.append(hit.group().lower())
 
     domains = list(set(domains))
@@ -161,7 +164,7 @@ def extract_domains(t):
 
 
 def extract_urls(t):
-    print "- Extracting: URLs"
+    print "+ Extracting: URLs"
     urls = re.findall(util.re_url, t)
     # eliminate repeats
     urls = list(set(urls))
@@ -174,7 +177,7 @@ def extract_urls(t):
 
 
 def extract_filenames(t):
-    print "- Extracting: File Names"
+    print "+ Extracting: File Names"
 
     docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
     exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
@@ -242,6 +245,67 @@ def get_time():
     now = now.replace(':', '_').split('.')[0]
     return now
 
+def processText(text, metadata, outfile):
+    '''Process a text 
+    '''
+    with open(outfile, 'w') as outfile:
+        outJson = generate_json(text, metadata, tlp=CONFIG_TLP)
+        outfile.write(json.dumps(outJson, indent=4))
+
+def processFile(filepath):
+    '''Process a File and write output to outfile
+    @filename: Input PDF filename
+
+    TODO: use magic to determine file type, instead of keying-off file ext
+    '''
+    try:
+        print "- Analyzing File: %s" % (filepath)
+        if CONFIG_OUT_FILE:
+            out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
+        else:
+            out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, os.path.basename(filepath), get_time())
+        if filepath.endswith('.pdf'):
+            text = JagerPDF(filepath).text
+        else:
+            text = open(filepath).read()
+        metadata = file_metadata(filepath)
+        processText(text, metadata, out_filename)
+        print '- Wrote output to %s'%(out_filename)
+        return True
+    except IOError as e:
+        current_ts = time.strftime("%Y-%m-%d %H:%M")
+        print 'Error : %s'%(e)
+        with open("error.txt", "a+") as error:
+            error.write("%s %s - IOError %s\n" % (current_ts, filepath, e))
+
+def processURL(url):
+    global CONFIG_OUT_PATH
+    urlObj = urlparse(url)
+    if urlObj.scheme not in ['http','https']:
+        print 'Error: Unsupported scheme'
+        return False
+    try:
+        print "- Analyzing URL: %s" % (url)
+        # disable cert checking (many sites dont have valid certs + speedup )
+        r = requests.get(url, verify=False)
+        if r.status_code == 200:
+            if 'json' in r.headers['content-type']:
+                text = r.json()
+            elif 'pdf' in r.headers['content-type']:
+                temp = tempfile.NamedTemporaryFile(suffix='.pdf')
+                temp.file.write(r.text)
+                temp.file.close()
+                text = JagerPDF(temp.name).text
+            else:
+                text = r.text
+            out_filename = "%s/%s_%s.json"%(CONFIG_OUT_PATH, urlObj.netloc, get_time())
+            metadata = {'url': url}
+            processText(text, metadata, out_filename)
+            print '- Wrote output to %s'%(out_filename)
+            return True
+    except Exception as e:
+        print 'Error processing URL %s : %s'%(url, e)
+    return False
 
 def title():
     ascii_art = """
@@ -266,102 +330,81 @@ def main():
     parser.add_argument("-p", "--pdf", help="Specify an input.", action="store",
                         default=None, type=str, dest="in_pdf", required=False)
 
-    parser.add_argument("-o", "--output", help="Specify an output.", action="store",
-                        default="output.json", type=str, dest="out_path", required=False)
+    parser.add_argument("-o", "--output", help="Specify an output directory/filename.", action="store",
+                        default=None, type=str, dest="out_path", required=True)
 
-    parser.add_argument("-d", "--directory", help="WIP: Specify a directory to analyze.",
+    parser.add_argument("-d", "--directory", help="Specify a directory to analyze.",
                         action="store", default=None, type=str, dest="in_directory", required=False)
 
-    parser.add_argument("-u", "--url", help="WIP: Analyze webpage.", action="store",
+    parser.add_argument("-u", "--url", help="Analyze webpage.", action="store",
                         default=None, type=str, dest="in_url", required=False)
 
-    parser.add_argument("-t", "--text", help="NOT IMPLIMENTED: Analyze text file.",
+    parser.add_argument("-t", "--text", help="Analyze text file.",
                         action="store", default=None, type=str, dest="in_text", required=False)
 
     parser.add_argument("-v", "--verbose", help="Prints lots of status messages.",
                         action="store_true", dest="verbose", default=True, required=False)
 
+    parser.add_argument("--tlp", help="Configure TLP.",
+                        action="store", dest="tlp", default='GREEN', required=False)
+
     args = parser.parse_args()
 
-    if args.in_pdf and args.out_path:
-        # Input of a PDF out to JSON
-        if os.path.exists(os.path.abspath(args.out_path)):
-            print 'error: output file %s all ready exists!' % args.out_path
-            out_path = '%s_%s.json' % (os.path.splitext(args.out_path)[0], get_time())
-            print 'using output file %s' % out_path
-        else:
-            out_path = args.out_path
+    # Setup globals
+    global CONFIG_TLP
+    global CONFIG_OUT_PATH
+    global CONFIG_OUT_FILE
+    CONFIG_TLP = args.tlp
 
-        out_file = open(os.path.abspath(out_path), 'w')
+    if '.' in args.out_path:
+        CONFIG_OUT_PATH, CONFIG_OUT_FILE = os.path.split(os.path.abspath(args.out_path))
+    else:
+        CONFIG_OUT_PATH = os.path.abspath(args.out_path)
+    
+    # Check if out path exists. If not, create it and check return
+    if not os.path.exists(CONFIG_OUT_PATH):
+        try:
+            os.makedirs(CONFIG_OUT_PATH)
+        except OSError as e:
+            print 'Error creating output directory %s'%CONFIG_OUT_PATH
+            exit(1)
 
+    # Start processing command line args
+    if args.in_pdf:
         if not os.path.exists(os.path.abspath(args.in_pdf)):
             print 'error: input PDF %s does not exist!' % args.in_pdf
-            out_file.close()
-            os.remove(os.path.abspath(out_path))
-            sys.exit(1)
-        in_file = os.path.abspath(args.in_pdf)
+            exit(1)
+        processFile(args.in_pdf)
 
-        metadata = file_metadata(in_file)
+    elif args.in_url:
+        print "You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
+        processURL(args.in_url)
 
-        pdftext = str(JagerPDF(in_file))
-        outjson = json.dumps(generate_json(pdftext, metadata), indent=4)
-
-        out_file.write(outjson)
-        out_file.close()
-
-    elif args.in_url and args.out_path:
-        # Input of a website out to JSON
-        print "WIP: You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
-
-        # Should we be verifying this is a valid URL?
-        r = requests.get(args.in_url)
-        return r
-        # You aren"t writing the JSON response here to anything, right?
-        # It just returns the requests object.
-        # should it be something like:
-        # r = requests.get(options.in_url)
-        # if r.status_code == 200:
-        #     json_out = r.json()
-        #     ....
-        #     out_file.write(json_out)
-        #     out_file.close()
-
-    elif args.in_directory and args.out_path:
+    elif args.in_directory:
         # Input directory, expand directory and output to json
-        print "WIP: You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
+        print "You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
 
-        # Should we be checking for this too?
         # An invalid dir or non-existent dir will crash the app
-        # if os.path.exists(args.in_directory):
-        #     if not os.path.isdir(args.in_directory):
-        #         print "error: input %s is not a valid directory" % args.in_directory)
-        # else:
-        #     print "error: input directory %s does not exist" % args.in_directory)
+        if os.path.exists(args.in_directory):
+            if not os.path.isdir(args.in_directory):
+                print "error: input %s is not a valid directory" % args.in_directory
+                exit(1)
+        else:
+            print "error: input directory %s does not exist" % args.in_directory
+            exit(1)
 
-        for root, dirs, files in os.walk(os.path.abspath(args.in_directory)):
-            # `file` in Python denotes a file like object.
-            # change this to f" to avoid confusion?
-            for f in files:
-                if f.endswith(".pdf"):
-                    try:
-                        print "- Analyzing File: %s" % (file)
-                        out_filename = "%s/%s.json" % (args.out_path, file.split('/')[-1].split(".")[0])
-                        out_file = open(out_filename, 'w')
+        # Save to a directory, and not a single file
+        CONFIG_OUT_FILE = None
+        pool = Pool(processes=cpu_count())
+        files = glob.glob('%s/*.pdf'%args.in_directory)
+        pool.map(processFile, files)
+        pool.close()
+        pool.join()
 
-                        out_file.write(json.dumps(generate_json(
-                            str(JagerPDF(os.path.join(root, file))),
-                            file_metadata(os.path.join(root, file)),
-                            'green'), indent=4))
-                        out_file.close()
-
-                    except IOError as e:
-                        current_ts = time.strftime("%Y-%m-%d %H:%M")
-                        with open("error.txt", "a+") as error:
-                            error.write("%s - IOError %s\n" % (current_ts, os.path.join(root, f), e))
-
-    elif args.in_text and args.out_path:
+    elif args.in_text:
         # Input of a textfile and output to json
-        print "NOT IMPLEMENTED: You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
+        print "You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
+        processFile(args.in_text)
 
     else:
         print "That set of options won't get you what you need.\n"
