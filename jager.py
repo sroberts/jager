@@ -15,6 +15,7 @@ import re
 import sys
 import time
 import glob
+import pprint
 import logging
 import tempfile
 from urlparse import urlparse
@@ -248,9 +249,13 @@ def get_time():
 def processText(text, metadata, outfile):
     '''Process a text 
     '''
-    with open(outfile, 'w') as outfile:
-        outJson = generate_json(text, metadata, tlp=CONFIG_TLP)
-        outfile.write(json.dumps(outJson, indent=4))
+    outJson = generate_json(text, metadata, tlp=CONFIG_TLP)
+    if not outfile:
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(outJson)
+    else:
+        with open(outfile, 'w') as outfile:
+            outfile.write(json.dumps(outJson, indent=4))
 
 def processFile(filepath):
     '''Process a File and write output to outfile
@@ -258,19 +263,23 @@ def processFile(filepath):
 
     TODO: use magic to determine file type, instead of keying-off file ext
     '''
+    global CONFIG_OUT_FILE
+    global CONFIG_OUT_PATH
     try:
         print "- Analyzing File: %s" % (filepath)
-        if CONFIG_OUT_FILE:
+        if CONFIG_OUT_FILE and CONFIG_OUT_PATH:
             out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
         else:
-            out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, os.path.basename(filepath), get_time())
+            out_filename = None
+            #out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, os.path.basename(filepath), get_time())
         if filepath.endswith('.pdf'):
             text = JagerPDF(filepath).text
         else:
             text = open(filepath).read()
         metadata = file_metadata(filepath)
         processText(text, metadata, out_filename)
-        print '- Wrote output to %s'%(out_filename)
+        if out_filename:
+            print '- Wrote output to %s'%(out_filename)
         return True
     except IOError as e:
         current_ts = time.strftime("%Y-%m-%d %H:%M")
@@ -300,10 +309,14 @@ def processURL(url):
                 text = JagerPDF(temp.name).text
             else:
                 text = r.text
-            out_filename = "%s/%s_%s.json"%(CONFIG_OUT_PATH, urlObj.netloc, get_time())
+            if CONFIG_OUT_PATH:
+                out_filename = "%s/%s_%s.json"%(CONFIG_OUT_PATH, urlObj.netloc, get_time())
+            else:
+                out_filename = None
             metadata = {'url': url}
             processText(text, metadata, out_filename)
-            print '- Wrote output to %s'%(out_filename)
+            if out_filename:
+                print '- Wrote output to %s'%(out_filename)
             return True
         else:
             print 'HTTP response : %s'%(r.status_code)
@@ -336,7 +349,7 @@ def main():
                         default=None, type=str, dest="in_pdf", required=False)
 
     parser.add_argument("-o", "--output", help="Specify an output directory/filename.", action="store",
-                        default=None, type=str, dest="out_path", required=True)
+                        default=None, type=str, dest="out_path", required=False)
 
     parser.add_argument("-d", "--directory", help="Specify a directory to analyze.",
                         action="store", default=None, type=str, dest="in_directory", required=False)
@@ -361,18 +374,16 @@ def main():
     global CONFIG_OUT_FILE
     CONFIG_TLP = args.tlp
 
-    if '.' in args.out_path:
+    if args.out_path:
         CONFIG_OUT_PATH, CONFIG_OUT_FILE = os.path.split(os.path.abspath(args.out_path))
-    else:
-        CONFIG_OUT_PATH = os.path.abspath(args.out_path)
     
-    # Check if out path exists. If not, create it and check return
-    if not os.path.exists(CONFIG_OUT_PATH):
-        try:
-            os.makedirs(CONFIG_OUT_PATH)
-        except OSError as e:
-            print 'Error creating output directory %s'%CONFIG_OUT_PATH
-            exit(1)
+        # Check if out path exists. If not, create it and check return
+        if not os.path.exists(CONFIG_OUT_PATH):
+            try:
+                os.makedirs(CONFIG_OUT_PATH)
+            except OSError as e:
+                print 'Error creating output directory %s'%CONFIG_OUT_PATH
+                exit(1)
 
     # Start processing command line args
     if args.in_pdf:
@@ -399,7 +410,6 @@ def main():
             exit(1)
 
         # Save to a directory, and not a single file
-        CONFIG_OUT_FILE = None
         pool = Pool(processes=cpu_count())
         files = glob.glob('%s/*.pdf'%args.in_directory)
         pool.map(processFile, files)
