@@ -32,22 +32,24 @@ from utilitybelt import utilitybelt as util
 CONFIG_OUT_PATH = None
 CONFIG_OUT_FILE = None
 CONFIG_TLP      = 'GREEN'
+logger          = None
 
-def getLogger(verbose=False):
+def getLogger(verbose=False, filename=None):
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logger = logging.getLogger('jager')
-    set_trace()
+    # set logging level
     if verbose:
         level = logging.DEBUG
     else:
         level = logging.INFO
     logger.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # Setup logging to file
-    filename = time.strftime("%Y_%m_%d_%H_%M.log")
-    fh = logging.FileHandler('logs/%s'%(filename))
-    fh.setLevel(level)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
+    if filename:
+        # Setup logging to file
+        fh = logging.FileHandler(filename)
+        fh.setLevel(level)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
     # Setup logging to console
     ch = logging.StreamHandler()
     ch.setLevel(level)
@@ -74,21 +76,23 @@ def www_text_extractor(target):
 # Meta Data
 
 def file_metadata(path, tlp='green'):
-    print "+ Extracting: Source File Metadata"
+    global logger
+    logger.debug("+ Extracting: Source File Metadata")
 
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
     filesize = os.path.getsize(path)
     filename = path.split('/')[-1]
     filetype = magic.from_file(path)
 
-    print "- Metadata Generated"
+    logger.debug("- Metadata Generated")
 
     return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
 
 
 # Data Extractors
 def extract_hashes(t):
-    print "+ Extracting: Hashes"
+    global logger
+    logger.debug("+ Extracting: Hashes")
 
     md5s = list(set(re.findall(util.re_md5, t)))
     sha1s = list(set(re.findall(util.re_sha1, t)))
@@ -96,28 +100,30 @@ def extract_hashes(t):
     sha512s = list(set(re.findall(util.re_sha512, t)))
     ssdeeps = list(set(re.findall(util.re_ssdeep, t)))
 
-    print " - %s MD5s detected." % len(md5s)
-    print " - %s SHA1s detected." % len(sha1s)
-    print " - %s SHA256s detected." % len(sha256s)
-    print " - %s SHA512s detected." % len(sha512s)
-    print " - %s ssdeeps detected." % len(ssdeeps)
+    logger.debug(" - %s MD5s detected." % len(md5s))
+    logger.debug(" - %s SHA1s detected." % len(sha1s))
+    logger.debug(" - %s SHA256s detected." % len(sha256s))
+    logger.debug(" - %s SHA512s detected." % len(sha512s))
+    logger.debug(" - %s ssdeeps detected." % len(ssdeeps))
 
     return {"md5s": md5s, "sha1s": sha1s, "sha256": sha256s, "sha512": sha512s, "ssdeep": ssdeeps}
 
 
 def extract_emails(t):
-    print "+ Extracting: Email Addresses"
+    global logger
+    logger.debug("+ Extracting: Email Addresses")
 
     emails = list(set(re.findall(util.re_email, t)))
     emails.sort()
 
-    print " - %d email addresses detected." % (len(emails))
+    logger.debug(" - %d email addresses detected." % (len(emails)))
 
     return emails
 
 
 def extract_ips(t):
-    print "+ Extracting: IPv4 Addresses"
+    global logger
+    logger.debug("+ Extracting: IPv4 Addresses")
 
     ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
@@ -126,26 +132,28 @@ def extract_ips(t):
             ips.remove(each)
     ips.sort()
 
-    print " - %d IPv4 addresses detected." % len(ips)
+    logger.debug(" - %d IPv4 addresses detected." % len(ips))
 
     return {"ipv4addresses": ips, "ipv6addresses": []}
 
 
 def extract_cves(t):
-    print "+ Extracting: CVE Identifiers"
+    global logger
+    logger.debug("+ Extracting: CVE Identifiers")
 
     cves = re.findall(util.re_cve, t)
     cves = list(set(cves))
 
     cves = [cve[0] for cve in cves]
 
-    print " - %d CVE identifiers detected." % len(cves)
+    logger.debug(" - %d CVE identifiers detected." % len(cves))
 
     return cves
 
 
 def extract_domains(t):
-    print "+ Extracting: Domains"
+    global logger
+    logger.debug("+ Extracting: Domains")
 
     domains = []
 
@@ -159,26 +167,28 @@ def extract_domains(t):
     domains = list(set(domains))
     domains.sort()
 
-    print " - %d domains detected." % len(domains)
+    logger.debug(" - %d domains detected." % len(domains))
 
     return domains
 
 
 def extract_urls(t):
-    print "+ Extracting: URLs"
+    global logger
+    logger.debug("+ Extracting: URLs")
     urls = re.findall(util.re_url, t)
     # eliminate repeats
     urls = list(set(urls))
     filter(None, urls)
     urls.sort()
 
-    print " - %d URLs detected." % len(urls)
+    logger.debug(" - %d URLs detected." % len(urls))
 
     return urls
 
 
 def extract_filenames(t):
-    print "+ Extracting: File Names"
+    global logger
+    logger.debug("+ Extracting: File Names")
 
     docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
     exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
@@ -194,12 +204,12 @@ def extract_filenames(t):
     imgs.sort()
     flashes.sort()
 
-    print " - %s Docs detected." % len(docs)
-    print " - %s Executable files detected." % len(exes)
-    print " - %s Web files detected." % len(webs)
-    print " - %s Zip files detected." % len(zips)
-    print " - %s Image files detected." % len(imgs)
-    print " - %s Flash files detected." % len(flashes)
+    logger.debug(" - %s Docs detected." % len(docs))
+    logger.debug(" - %s Executable files detected." % len(exes))
+    logger.debug(" - %s Web files detected." % len(webs))
+    logger.debug(" - %s Zip files detected." % len(zips))
+    logger.debug(" - %s Image files detected." % len(imgs))
+    logger.debug(" - %s Flash files detected." % len(flashes))
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
 
@@ -265,8 +275,9 @@ def processFile(filepath):
     '''
     global CONFIG_OUT_FILE
     global CONFIG_OUT_PATH
+    global logger
     try:
-        print "- Analyzing File: %s" % (filepath)
+        logger.debug("- Analyzing File: %s" % (filepath))
         if CONFIG_OUT_FILE and CONFIG_OUT_PATH:
             out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
         else:
@@ -279,22 +290,23 @@ def processFile(filepath):
         metadata = file_metadata(filepath)
         processText(text, metadata, out_filename)
         if out_filename:
-            print '- Wrote output to %s'%(out_filename)
+            logger.debug('- Wrote output to %s'%(out_filename))
         return True
     except IOError as e:
         current_ts = time.strftime("%Y-%m-%d %H:%M")
-        print 'Error : %s'%(e)
+        logger.error(e)
         with open("error.txt", "a+") as error:
             error.write("%s %s - IOError %s\n" % (current_ts, filepath, e))
 
 def processURL(url):
+    global logger
     global CONFIG_OUT_PATH
     urlObj = urlparse(url)
     if urlObj.scheme not in ['http','https']:
-        print 'Error: Unsupported scheme'
+        logger.error('Unsupported scheme')
         return False
     try:
-        print "- Analyzing URL: %s" % (url)
+        logger.debug("- Analyzing URL: %s" % (url))
         # Many sites will respond with a 4xx if the UA is wget/urllib/etc
         headers = {'User-Agent': 'Mozilla/5.0 (Windows; U; MSIE 7.0; Windows NT 6.0; en-US)'}
         # disable cert checking (many sites dont have valid certs + speedup )
@@ -316,13 +328,13 @@ def processURL(url):
             metadata = {'url': url}
             processText(text, metadata, out_filename)
             if out_filename:
-                print '- Wrote output to %s'%(out_filename)
+                logger.debug('- Wrote output to %s'%(out_filename))
             return True
         else:
-            print 'HTTP response : %s'%(r.status_code)
+            logger.debug('HTTP response : %s'%(r.status_code))
 
     except Exception as e:
-        print 'Error processing URL %s : %s'%(url, e)
+        logger.error('Error processing URL %s : %s'%(url, e))
     return False
 
 def title():
@@ -341,7 +353,7 @@ def title():
 # Interface
 def main():
     '''Where the initial work happens...'''
-    title()
+    #title()
 
     parser = argparse.ArgumentParser(prog=sys.argv[0])
 
@@ -361,7 +373,7 @@ def main():
                         action="store", default=None, type=str, dest="in_text", required=False)
 
     parser.add_argument("-v", "--verbose", help="Prints lots of status messages.",
-                        action="store_true", dest="verbose", default=True, required=False)
+                        action="store_true", dest="verbose", default=False, required=False)
 
     parser.add_argument("--tlp", help="Configure TLP.",
                         action="store", dest="tlp", default='GREEN', required=False)
@@ -374,6 +386,10 @@ def main():
     global CONFIG_OUT_FILE
     CONFIG_TLP = args.tlp
 
+    # Setup logger
+    global logger
+    logger = getLogger(verbose=args.verbose)
+
     if args.out_path:
         CONFIG_OUT_PATH, CONFIG_OUT_FILE = os.path.split(os.path.abspath(args.out_path))
     
@@ -382,31 +398,31 @@ def main():
             try:
                 os.makedirs(CONFIG_OUT_PATH)
             except OSError as e:
-                print 'Error creating output directory %s'%CONFIG_OUT_PATH
+                logger.error('could not create output directory %s'%CONFIG_OUT_PATH)
                 exit(1)
 
     # Start processing command line args
     if args.in_pdf:
         if not os.path.exists(os.path.abspath(args.in_pdf)):
-            print 'error: input PDF %s does not exist!' % args.in_pdf
+            logger.error('input PDF %s does not exist!' % args.in_pdf)
             exit(1)
         processFile(args.in_pdf)
 
     elif args.in_url:
-        print "You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
+        logger.debug("You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path))
         processURL(args.in_url)
 
     elif args.in_directory:
         # Input directory, expand directory and output to json
-        print "You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
+        logger.debug("You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path))
 
         # An invalid dir or non-existent dir will crash the app
         if os.path.exists(args.in_directory):
             if not os.path.isdir(args.in_directory):
-                print "error: input %s is not a valid directory" % args.in_directory
+                logger.error("input %s is not a valid directory" % args.in_directory)
                 exit(1)
         else:
-            print "error: input directory %s does not exist" % args.in_directory
+            logger.error("input directory %s does not exist" % args.in_directory)
             exit(1)
 
         # Save to a directory, and not a single file
@@ -418,11 +434,11 @@ def main():
 
     elif args.in_text:
         # Input of a textfile and output to json
-        print "You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
+        logger.debug("You are trying to analyze %s and output to %s" % (args.in_text, args.out_path))
         processFile(args.in_text)
 
     else:
-        print "That set of options won't get you what you need.\n"
+        logger.error("That set of options won't get you what you need.\n")
         parser.print_help()
 
     return True
