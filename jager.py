@@ -32,22 +32,24 @@ from utilitybelt import utilitybelt as util
 CONFIG_OUT_PATH = None
 CONFIG_OUT_FILE = None
 CONFIG_TLP      = 'GREEN'
+logger          = None
 
-def getLogger(verbose=False):
+def getLogger(verbose=False, filename=None):
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logger = logging.getLogger('jager')
-    set_trace()
+    # set logging level
     if verbose:
         level = logging.DEBUG
     else:
         level = logging.INFO
     logger.setLevel(level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # Setup logging to file
-    filename = time.strftime("%Y_%m_%d_%H_%M.log")
-    fh = logging.FileHandler('logs/%s'%(filename))
-    fh.setLevel(level)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
+    if filename:
+        # Setup logging to file
+        fh = logging.FileHandler(filename)
+        fh.setLevel(level)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
     # Setup logging to console
     ch = logging.StreamHandler()
     ch.setLevel(level)
@@ -117,7 +119,8 @@ def extract_emails(t):
 
 
 def extract_ips(t):
-    if VERBOSE: print "+ Extracting: IPv4 Addresses"
+    global logger
+    logger.debug("+ Extracting: IPv4 Addresses")
 
     ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
@@ -126,26 +129,29 @@ def extract_ips(t):
             ips.remove(each)
     ips.sort()
 
-    if VERBOSE: print " - %d IPv4 addresses detected." % len(ips)
+    logger.debug(" - %d IPv4 addresses detected." % len(ips))
 
     return {"ipv4addresses": ips, "ipv6addresses": []}
 
 
 def extract_cves(t):
-    if VERBOSE: print "+ Extracting: CVE Identifiers"
+    global logger
+    logger.debug("+ Extracting: CVE Identifiers")
 
     cves = re.findall(util.re_cve, t)
     cves = list(set(cves))
 
     cves = [cve[0] for cve in cves]
 
-    if VERBOSE: print " - %d CVE identifiers detected." % len(cves)
+    logger.debug(" - %d CVE identifiers detected." % len(cves))
 
     return cves
 
 
 def extract_domains(t):
-    if VERBOSE: print "+ Extracting: Domains"
+
+    global logger
+    logger.debug("+ Extracting: Domains")
 
     domains = []
 
@@ -159,26 +165,30 @@ def extract_domains(t):
     domains = list(set(domains))
     domains.sort()
 
-    if VERBOSE: print " - %d domains detected." % len(domains)
+    logger.debug(" - %d domains detected." % len(domains))
 
     return domains
 
 
 def extract_urls(t):
-    if VERBOSE: print "+ Extracting: URLs"
+
+    global logger
+    logger.debug("+ Extracting: URLs")
     urls = re.findall(util.re_url, t)
     # eliminate repeats
     urls = list(set(urls))
     filter(None, urls)
     urls.sort()
 
-    if VERBOSE: print " - %d URLs detected." % len(urls)
+    logger.debug(" - %d URLs detected." % len(urls))
 
     return urls
 
 
 def extract_filenames(t):
-    if VERBOSE: print "+ Extracting: File Names"
+
+    global logger
+    logger.debug("+ Extracting: File Names")
 
     docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
     exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
@@ -194,12 +204,12 @@ def extract_filenames(t):
     imgs.sort()
     flashes.sort()
 
-    if VERBOSE: print " - %s Docs detected." % len(docs)
-    if VERBOSE: print " - %s Executable files detected." % len(exes)
-    if VERBOSE: print " - %s Web files detected." % len(webs)
-    if VERBOSE: print " - %s Zip files detected." % len(zips)
-    if VERBOSE: print " - %s Image files detected." % len(imgs)
-    if VERBOSE: print " - %s Flash files detected." % len(flashes)
+    logger.debug(" - %s Docs detected." % len(docs))
+    logger.debug(" - %s Executable files detected." % len(exes))
+    logger.debug(" - %s Web files detected." % len(webs))
+    logger.debug(" - %s Zip files detected." % len(zips))
+    logger.debug(" - %s Image files detected." % len(imgs))
+    logger.debug(" - %s Flash files detected." % len(flashes))
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
 
@@ -265,8 +275,13 @@ def processFile(filepath):
     '''
     global CONFIG_OUT_FILE
     global CONFIG_OUT_PATH
+    global logger
     try:
+<<<<<<< HEAD
         if VERBOSE: print "- Analyzing File: %s" % (filepath)
+=======
+        logger.debug("- Analyzing File: %s" % (filepath))
+>>>>>>> 0d60a79c2ec0a06d96be9b891a178710798d1cad
         if CONFIG_OUT_FILE and CONFIG_OUT_PATH:
             out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
         else:
@@ -279,15 +294,24 @@ def processFile(filepath):
         metadata = file_metadata(filepath)
         processText(text, metadata, out_filename)
         if out_filename:
+<<<<<<< HEAD
             if VERBOSE: print '- Wrote output to %s'%(out_filename)
         return True
     except IOError as e:
         current_ts = time.strftime("%Y-%m-%d %H:%M")
         if VERBOSE: print 'Error : %s'%(e)
+=======
+            logger.debug('- Wrote output to %s'%(out_filename))
+        return True
+    except IOError as e:
+        current_ts = time.strftime("%Y-%m-%d %H:%M")
+        logger.error(e)
+>>>>>>> 0d60a79c2ec0a06d96be9b891a178710798d1cad
         with open("error.txt", "a+") as error:
             error.write("%s %s - IOError %s\n" % (current_ts, filepath, e))
 
 def processURL(url):
+    global logger
     global CONFIG_OUT_PATH
     urlObj = urlparse(url)
     if urlObj.scheme not in ['http','https']:
@@ -341,7 +365,7 @@ def title():
 # Interface
 def main():
     '''Where the initial work happens...'''
-    title()
+    #title()
 
     parser = argparse.ArgumentParser(prog=sys.argv[0])
 
@@ -361,7 +385,7 @@ def main():
                         action="store", default=None, type=str, dest="in_text", required=False)
 
     parser.add_argument("-v", "--verbose", help="if VERBOSE: prints lots of status messages.",
-                        action="store_true", dest="verbose", default=True, required=False)
+                        action="store_true", dest="verbose", default=False, required=False)
 
     parser.add_argument("--tlp", help="Configure TLP.",
                         action="store", dest="tlp", default='GREEN', required=False)
@@ -373,6 +397,10 @@ def main():
     global CONFIG_OUT_PATH
     global CONFIG_OUT_FILE
     CONFIG_TLP = args.tlp
+
+    # Setup logger
+    global logger
+    logger = getLogger(verbose=args.verbose)
 
     if args.out_path:
         CONFIG_OUT_PATH, CONFIG_OUT_FILE = os.path.split(os.path.abspath(args.out_path))
