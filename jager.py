@@ -74,21 +74,21 @@ def www_text_extractor(target):
 # Meta Data
 
 def file_metadata(path, tlp='green'):
-    print "+ Extracting: Source File Metadata"
+    if VERBOSE: print "+ Extracting: Source File Metadata"
 
     hash_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
     filesize = os.path.getsize(path)
     filename = path.split('/')[-1]
     filetype = magic.from_file(path)
 
-    print "- Metadata Generated"
+    if VERBOSE: print "- Metadata Generated"
 
     return {"sha1": hash_sha1, "filesize": filesize, "filename": filename, "filetype": filetype}
 
 
 # Data Extractors
 def extract_hashes(t):
-    print "+ Extracting: Hashes"
+    if VERBOSE: print "+ Extracting: Hashes"
 
     md5s = list(set(re.findall(util.re_md5, t)))
     sha1s = list(set(re.findall(util.re_sha1, t)))
@@ -96,28 +96,28 @@ def extract_hashes(t):
     sha512s = list(set(re.findall(util.re_sha512, t)))
     ssdeeps = list(set(re.findall(util.re_ssdeep, t)))
 
-    print " - %s MD5s detected." % len(md5s)
-    print " - %s SHA1s detected." % len(sha1s)
-    print " - %s SHA256s detected." % len(sha256s)
-    print " - %s SHA512s detected." % len(sha512s)
-    print " - %s ssdeeps detected." % len(ssdeeps)
+    if VERBOSE: print " - %s MD5s detected." % len(md5s)
+    if VERBOSE: print " - %s SHA1s detected." % len(sha1s)
+    if VERBOSE: print " - %s SHA256s detected." % len(sha256s)
+    if VERBOSE: print " - %s SHA512s detected." % len(sha512s)
+    if VERBOSE: print " - %s ssdeeps detected." % len(ssdeeps)
 
     return {"md5s": md5s, "sha1s": sha1s, "sha256": sha256s, "sha512": sha512s, "ssdeep": ssdeeps}
 
 
 def extract_emails(t):
-    print "+ Extracting: Email Addresses"
+    if VERBOSE: print "+ Extracting: Email Addresses"
 
     emails = list(set(re.findall(util.re_email, t)))
     emails.sort()
 
-    print " - %d email addresses detected." % (len(emails))
+    if VERBOSE: print " - %d email addresses detected." % (len(emails))
 
     return emails
 
 
 def extract_ips(t):
-    print "+ Extracting: IPv4 Addresses"
+    if VERBOSE: print "+ Extracting: IPv4 Addresses"
 
     ips = re.findall(util.re_ipv4, t)
     ips = list(set(ips))
@@ -126,26 +126,26 @@ def extract_ips(t):
             ips.remove(each)
     ips.sort()
 
-    print " - %d IPv4 addresses detected." % len(ips)
+    if VERBOSE: print " - %d IPv4 addresses detected." % len(ips)
 
     return {"ipv4addresses": ips, "ipv6addresses": []}
 
 
 def extract_cves(t):
-    print "+ Extracting: CVE Identifiers"
+    if VERBOSE: print "+ Extracting: CVE Identifiers"
 
     cves = re.findall(util.re_cve, t)
     cves = list(set(cves))
 
     cves = [cve[0] for cve in cves]
 
-    print " - %d CVE identifiers detected." % len(cves)
+    if VERBOSE: print " - %d CVE identifiers detected." % len(cves)
 
     return cves
 
 
 def extract_domains(t):
-    print "+ Extracting: Domains"
+    if VERBOSE: print "+ Extracting: Domains"
 
     domains = []
 
@@ -159,26 +159,26 @@ def extract_domains(t):
     domains = list(set(domains))
     domains.sort()
 
-    print " - %d domains detected." % len(domains)
+    if VERBOSE: print " - %d domains detected." % len(domains)
 
     return domains
 
 
 def extract_urls(t):
-    print "+ Extracting: URLs"
+    if VERBOSE: print "+ Extracting: URLs"
     urls = re.findall(util.re_url, t)
     # eliminate repeats
     urls = list(set(urls))
     filter(None, urls)
     urls.sort()
 
-    print " - %d URLs detected." % len(urls)
+    if VERBOSE: print " - %d URLs detected." % len(urls)
 
     return urls
 
 
 def extract_filenames(t):
-    print "+ Extracting: File Names"
+    if VERBOSE: print "+ Extracting: File Names"
 
     docs = list(set(["".join(doc) for doc in re.findall(util.re_doc, t)]))
     exes = list(set(["".join(item) for item in re.findall(util.re_exe, t)]))
@@ -194,12 +194,12 @@ def extract_filenames(t):
     imgs.sort()
     flashes.sort()
 
-    print " - %s Docs detected." % len(docs)
-    print " - %s Executable files detected." % len(exes)
-    print " - %s Web files detected." % len(webs)
-    print " - %s Zip files detected." % len(zips)
-    print " - %s Image files detected." % len(imgs)
-    print " - %s Flash files detected." % len(flashes)
+    if VERBOSE: print " - %s Docs detected." % len(docs)
+    if VERBOSE: print " - %s Executable files detected." % len(exes)
+    if VERBOSE: print " - %s Web files detected." % len(webs)
+    if VERBOSE: print " - %s Zip files detected." % len(zips)
+    if VERBOSE: print " - %s Image files detected." % len(imgs)
+    if VERBOSE: print " - %s Flash files detected." % len(flashes)
 
     return {"documents": docs, "executables": exes, "compressed": zips, "flash": flashes, "web": webs}
 
@@ -247,7 +247,7 @@ def get_time():
     return now
 
 def processText(text, metadata, outfile):
-    '''Process a text 
+    '''Process a text
     '''
     outJson = generate_json(text, metadata, tlp=CONFIG_TLP)
     if not outfile:
@@ -266,7 +266,7 @@ def processFile(filepath):
     global CONFIG_OUT_FILE
     global CONFIG_OUT_PATH
     try:
-        print "- Analyzing File: %s" % (filepath)
+        if VERBOSE: print "- Analyzing File: %s" % (filepath)
         if CONFIG_OUT_FILE and CONFIG_OUT_PATH:
             out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
         else:
@@ -279,11 +279,11 @@ def processFile(filepath):
         metadata = file_metadata(filepath)
         processText(text, metadata, out_filename)
         if out_filename:
-            print '- Wrote output to %s'%(out_filename)
+            if VERBOSE: print '- Wrote output to %s'%(out_filename)
         return True
     except IOError as e:
         current_ts = time.strftime("%Y-%m-%d %H:%M")
-        print 'Error : %s'%(e)
+        if VERBOSE: print 'Error : %s'%(e)
         with open("error.txt", "a+") as error:
             error.write("%s %s - IOError %s\n" % (current_ts, filepath, e))
 
@@ -291,10 +291,10 @@ def processURL(url):
     global CONFIG_OUT_PATH
     urlObj = urlparse(url)
     if urlObj.scheme not in ['http','https']:
-        print 'Error: Unsupported scheme'
+        if VERBOSE: print 'Error: Unsupported scheme'
         return False
     try:
-        print "- Analyzing URL: %s" % (url)
+        if VERBOSE: print "- Analyzing URL: %s" % (url)
         # Many sites will respond with a 4xx if the UA is wget/urllib/etc
         headers = {'User-Agent': 'Mozilla/5.0 (Windows; U; MSIE 7.0; Windows NT 6.0; en-US)'}
         # disable cert checking (many sites dont have valid certs + speedup )
@@ -316,13 +316,13 @@ def processURL(url):
             metadata = {'url': url}
             processText(text, metadata, out_filename)
             if out_filename:
-                print '- Wrote output to %s'%(out_filename)
+                if VERBOSE: print '- Wrote output to %s'%(out_filename)
             return True
         else:
-            print 'HTTP response : %s'%(r.status_code)
+            if VERBOSE: print 'HTTP response : %s'%(r.status_code)
 
     except Exception as e:
-        print 'Error processing URL %s : %s'%(url, e)
+        if VERBOSE: print 'Error processing URL %s : %s'%(url, e)
     return False
 
 def title():
@@ -335,7 +335,7 @@ def title():
              |___/
 
 """
-    print ascii_art
+    if VERBOSE: print ascii_art
 
 
 # Interface
@@ -360,7 +360,7 @@ def main():
     parser.add_argument("-t", "--text", help="Analyze text file.",
                         action="store", default=None, type=str, dest="in_text", required=False)
 
-    parser.add_argument("-v", "--verbose", help="Prints lots of status messages.",
+    parser.add_argument("-v", "--verbose", help="if VERBOSE: prints lots of status messages.",
                         action="store_true", dest="verbose", default=True, required=False)
 
     parser.add_argument("--tlp", help="Configure TLP.",
@@ -376,37 +376,37 @@ def main():
 
     if args.out_path:
         CONFIG_OUT_PATH, CONFIG_OUT_FILE = os.path.split(os.path.abspath(args.out_path))
-    
+
         # Check if out path exists. If not, create it and check return
         if not os.path.exists(CONFIG_OUT_PATH):
             try:
                 os.makedirs(CONFIG_OUT_PATH)
             except OSError as e:
-                print 'Error creating output directory %s'%CONFIG_OUT_PATH
+                if VERBOSE: print 'Error creating output directory %s'%CONFIG_OUT_PATH
                 exit(1)
 
     # Start processing command line args
     if args.in_pdf:
         if not os.path.exists(os.path.abspath(args.in_pdf)):
-            print 'error: input PDF %s does not exist!' % args.in_pdf
+            if VERBOSE: print 'error: input PDF %s does not exist!' % args.in_pdf
             exit(1)
         processFile(args.in_pdf)
 
     elif args.in_url:
-        print "You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
+        if VERBOSE: print "You are trying to analyze: %s and output to %s" % (args.in_url, args.out_path)
         processURL(args.in_url)
 
     elif args.in_directory:
         # Input directory, expand directory and output to json
-        print "You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
+        if VERBOSE: print "You are trying to analyze all the PDFs in %s and output to %s" % (args.in_directory, args.out_path)
 
         # An invalid dir or non-existent dir will crash the app
         if os.path.exists(args.in_directory):
             if not os.path.isdir(args.in_directory):
-                print "error: input %s is not a valid directory" % args.in_directory
+                if VERBOSE: print "error: input %s is not a valid directory" % args.in_directory
                 exit(1)
         else:
-            print "error: input directory %s does not exist" % args.in_directory
+            if VERBOSE: print "error: input directory %s does not exist" % args.in_directory
             exit(1)
 
         # Save to a directory, and not a single file
@@ -418,11 +418,11 @@ def main():
 
     elif args.in_text:
         # Input of a textfile and output to json
-        print "You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
+        if VERBOSE: print "You are trying to analyze %s and output to %s" % (args.in_text, args.out_path)
         processFile(args.in_text)
 
     else:
-        print "That set of options won't get you what you need.\n"
+        if VERBOSE: print "That set of options won't get you what you need.\n"
         parser.print_help()
 
     return True
@@ -431,6 +431,6 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print "User aborted."
+        if VERBOSE: print "User aborted."
     except SystemExit:
         pass
