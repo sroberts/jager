@@ -260,7 +260,7 @@ def get_time():
     return now
 
 
-def processText(text, metadata, outfile):
+def processText(text, metadata, outfile=None):
     '''Process a text
     '''
     outJson = generate_json(text, metadata, tlp=CONFIG_TLP)
@@ -447,8 +447,13 @@ def main():
         processFile(args.in_text)
 
     else:
-        logger.debug("That set of options won't get you what you need.\n")
-        parser.print_help()
+        input_str = sys.stdin.read()
+        if input_str:
+            # logger.debug("You are trying to analyze %s and output to %s" % (args.in_text, args.out_path))
+            processText(input_str, metadata = {'source': 'unknown'})
+        else:
+            logger.debug("That set of options won't get you what you need.\n")
+            parser.print_help()
 
     return True
 
