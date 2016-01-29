@@ -8,19 +8,19 @@ Copyright (c) 2013 TogaFoamParty Studios. All rights reserved.
 """
 
 import argparse
+import glob
 import hashlib
 import json
+import logging
 import os
 import re
 import sys
-import time
-import glob
-import pprint
-import logging
 import tempfile
-from urlparse import urlparse
+import time
 from datetime import datetime
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
+from multiprocessing import cpu_count
+from urlparse import urlparse
 
 import bs4
 import magic
@@ -31,8 +31,10 @@ from utilitybelt import utilitybelt as util
 # Global settings, set from command line args
 CONFIG_OUT_PATH = None
 CONFIG_OUT_FILE = None
-CONFIG_TLP      = 'GREEN'
-logger          = None
+CONFIG_TLP = 'GREEN'
+# logger = None
+logger = getLogger()
+
 
 def getLogger(verbose=False, filename=None):
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -65,6 +67,7 @@ def getLogger(verbose=False, filename=None):
 VERBOSE = False
 
 # Text Extractors:
+
 
 def www_text_extractor(target):
     response = requests.get(target)
@@ -256,6 +259,7 @@ def get_time():
     now = now.replace(':', '_').split('.')[0]
     return now
 
+
 def processText(text, metadata, outfile):
     '''Process a text
     '''
@@ -265,6 +269,7 @@ def processText(text, metadata, outfile):
     else:
         with open(outfile, 'w') as outfile:
             outfile.write(json.dumps(outJson, indent=4))
+
 
 def processFile(filepath):
     '''Process a File and write output to outfile
@@ -282,7 +287,7 @@ def processFile(filepath):
             out_filename = "%s/%s" % (CONFIG_OUT_PATH, CONFIG_OUT_FILE)
         else:
             out_filename = None
-            #out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, os.path.basename(filepath), get_time())
+            # out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, os.path.basename(filepath), get_time())
         if filepath.endswith('.pdf'):
             text = JagerPDF(filepath).text
         else:
@@ -290,7 +295,7 @@ def processFile(filepath):
         metadata = file_metadata(filepath)
         processText(text, metadata, out_filename)
         if out_filename:
-            logger.debug('- Wrote output to %s'%(out_filename))
+            logger.debug('- Wrote output to %s' % (out_filename))
         return True
     except IOError as e:
         current_ts = time.strftime("%Y-%m-%d %H:%M")
@@ -299,11 +304,12 @@ def processFile(filepath):
         with open("error.txt", "a+") as error:
             error.write("%s %s - IOError %s\n" % (current_ts, filepath, e))
 
+
 def processURL(url):
     global logger
     global CONFIG_OUT_PATH
     urlObj = urlparse(url)
-    if urlObj.scheme not in ['http','https']:
+    if urlObj.scheme not in ['http', 'https']:
         logger.warning('Error: Unsupported scheme')
         return False
     try:
@@ -323,20 +329,21 @@ def processURL(url):
             else:
                 text = r.text
             if CONFIG_OUT_PATH:
-                out_filename = "%s/%s_%s.json"%(CONFIG_OUT_PATH, urlObj.netloc, get_time())
+                out_filename = "%s/%s_%s.json" % (CONFIG_OUT_PATH, urlObj.netloc, get_time())
             else:
                 out_filename = None
             metadata = {'url': url}
             processText(text, metadata, out_filename)
             if out_filename:
-                logger.debug('- Wrote output to %s'%(out_filename))
+                logger.debug('- Wrote output to %s' % (out_filename))
             return True
         else:
-            logger.debug('HTTP response : %s'%(r.status_code))
+            logger.debug('HTTP response : %s' % (r.status_code))
 
     except Exception as e:
-        logger.debug('Error processing URL %s : %s'%(url, e))
+        logger.debug('Error processing URL %s : %s' % (url, e))
     return False
+
 
 def title():
     ascii_art = """
@@ -387,8 +394,7 @@ def main():
     CONFIG_TLP = args.tlp
 
     # Setup logger
-    global logger
-    logger = getLogger(verbose=args.verbose)
+    #global logger
 
     logger.debug(title())
 
@@ -400,7 +406,7 @@ def main():
             try:
                 os.makedirs(CONFIG_OUT_PATH)
             except OSError as e:
-                logger.debug('Error creating output directory %s'%CONFIG_OUT_PATH)
+                logger.debug('Error creating output directory %s %s' % CONFIG_OUT_PATH, e)
                 exit(1)
 
     # Start processing command line args
@@ -429,7 +435,7 @@ def main():
 
         # Save to a directory, and not a single file
         pool = Pool(processes=cpu_count())
-        files = glob.glob('%s/*.pdf'%args.in_directory)
+        files = glob.glob('%s/*.pdf' % args.in_directory)
         pool.map(processFile, files)
         pool.close()
         pool.join()
