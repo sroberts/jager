@@ -32,8 +32,6 @@ from utilitybelt import utilitybelt as util
 CONFIG_OUT_PATH = None
 CONFIG_OUT_FILE = None
 CONFIG_TLP = 'GREEN'
-# logger = None
-logger = getLogger()
 
 
 def getLogger(verbose=False, filename=None):
@@ -65,6 +63,8 @@ def getLogger(verbose=False, filename=None):
 
 # Switches
 VERBOSE = False
+
+logger = getLogger()
 
 # Text Extractors:
 
@@ -394,7 +394,8 @@ def main():
     CONFIG_TLP = args.tlp
 
     # Setup logger
-    #global logger
+    global logger
+    logger = getLogger(verbose=args.verbose)
 
     logger.debug(title())
 
