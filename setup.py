@@ -18,7 +18,7 @@ setup(
                       'pre-commit==0.3.6',
                       'pygeoip==0.3.2',
                       'python-magic==0.4.6',
-                      'PyYAML==5.1',
+                      'PyYAML==5.4',
                       'requests>=2.20.0',
                       'simplejson==3.6.5',
                       'pytest>=2.7.0',
